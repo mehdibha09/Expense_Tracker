@@ -6,6 +6,7 @@ pipeline {
         RENDER_API_KEY = credentials('render-api-key')
         RENDER_BACKEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g7rih5pdvs73a0p03g?key=Fb5-LPdrHNA"
         RENDER_FRONTEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g8m4vgi27c73bbdrlg?key=B2ksgpaa-vE"
+        SONAR_TOKEN= credentials('sonoarToken')
     }
 
     tools {
@@ -58,31 +59,32 @@ pipeline {
             }
         }
 stage('Sonar') {
-    steps {
-        dir('expense-tracker-service') {
-            withSonarQubeEnv('sonoarQube') {
-                              sh 'mvn clean compile sonar:sonar'
-            }
-        }
+  steps {
+    dir('expense-tracker-service') {
+      withSonarQubeEnv('sonoarQube') {
+        sh 'mvn clean compile sonar:sonar -Dsonar.projectKey=expenseTracker -Dsonar.host.url=http://localhost:9000 -Dsonar.login=${SONAR_TOKEN} -Dsonar.java.binaries=target/classes'
+      }
     }
-    post {
-        success {
-            script {
-                timeout(time: 5, unit: 'MINUTES') {
-                    def qualityGate = waitForQualityGate()
-                    if (qualityGate.status != 'OK') {
-                        error "SonarQube Quality Gate failed: ${qualityGate.status}"
-                    } else {
-                        echo "SonarQube analysis passed."
-                    }
-                }
-            }
+  }
+  post {
+    success {
+      script {
+        timeout(time: 10, unit: 'MINUTES') {
+          def qualityGate = waitForQualityGate()
+          if (qualityGate.status != 'OK') {
+            error "SonarQube Quality Gate failed: ${qualityGate.status}"
+          } else {
+            echo "SonarQube analysis passed."
+          }
         }
-        failure {
-            echo "SonarQube analysis failed during execution."
-        }
+      }
     }
+    failure {
+      echo "SonarQube analysis failed during execution."
+    }
+  }
 }
+
 
 
     stage('Deploy to Render') {
