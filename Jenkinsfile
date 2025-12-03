@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -6,7 +5,7 @@ pipeline {
         RENDER_API_KEY = credentials('render-api-key')
         RENDER_BACKEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g7rih5pdvs73a0p03g?key=Fb5-LPdrHNA"
         RENDER_FRONTEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g8m4vgi27c73bbdrlg?key=B2ksgpaa-vE"
-        SONAR_TOKEN= credentials('sonoarToken')
+        SONAR_TOKEN = credentials('sonoarToken')
     }
 
     tools {
@@ -30,7 +29,6 @@ pipeline {
 
         stage('Build') {
             parallel {
-
                 stage('Java Backend') {
                     steps {
                         dir('expense-tracker-service') {
@@ -53,57 +51,81 @@ pipeline {
                 }
             }
         }
+
         stage('Test Backend') {
             steps {
                 sh 'cd expense-tracker-service && mvn test'
             }
         }
-stage('Sonar') {
-  steps {
-    dir('expense-tracker-service') {
-      withSonarQubeEnv('sonoarQube') {
-        sh 'mvn clean compile sonar:sonar -Dsonar.projectKey=expenseTracker -Dsonar.host.url=http://localhost:9000 -Dsonar.login=${SONAR_TOKEN} -Dsonar.java.binaries=target/classes'
-      }
-    }
-  }
-  post {
-    success {
-      script {
-        timeout(time: 10, unit: 'MINUTES') {
-          def qualityGate = waitForQualityGate()
-          if (qualityGate.status != 'OK') {
-            error "SonarQube Quality Gate failed: ${qualityGate.status}"
-          } else {
-            echo "SonarQube analysis passed."
-          }
+
+        stage('Sonar') {
+            steps {
+                dir('expense-tracker-service') {
+                    withSonarQubeEnv('sonoarQube') {
+                        sh """
+                        mvn clean compile sonar:sonar \
+                            -Dsonar.projectKey=expenseTracker \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.java.binaries=target/classes
+                        """
+                    }
+                }
+            }
         }
-      }
-    }
-    failure {
-      echo "SonarQube analysis failed during execution."
-    }
-  }
-}
 
+        stage('Quality Gate') {
+            steps {
+                script {
+                    // Fonction retry si timeout dépassé
+                    def retryForTimeoutExceeded = { count = 3, Closure closure ->
+                        for (int i = 1; i <= count; i++) {
+                            try {
+                                closure()
+                                break
+                            } catch (FlowInterruptedException error) {
+                                int retriesLeft = count - i
+                                def hasTimeoutExceeded = error.causes[0] instanceof org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.ExceededTimeout
+                                echo "Timeout exceeded for Quality Gate. Retries left: ${retriesLeft}"
+                                if (retriesLeft == 0 || !hasTimeoutExceeded) {
+                                    throw error
+                                } else {
+                                    sleep(time: 5, unit: 'SECONDS') // pause avant retry
+                                }
+                            }
+                        }
+                    }
 
-
-    stage('Deploy to Render') {
-    steps {
-        script {
-            echo "Deploying Backend..."
-            sh "curl -X POST ${RENDER_BACKEND_DEPLOY_HOOK}"
-
-            echo "Deploying Frontend..."
-            sh "curl -X POST ${RENDER_FRONTEND_DEPLOY_HOOK}"
+                    retryForTimeoutExceeded {
+                        timeout(time: 10, unit: 'MINUTES') {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
+                            } else {
+                                echo "✔ SonarQube Quality Gate passed."
+                            }
+                        }
+                    }
+                }
+            }
         }
-    }
-}
 
+        stage('Deploy to Render') {
+            steps {
+                script {
+                    echo "Deploying Backend..."
+                    sh "curl -X POST ${RENDER_BACKEND_DEPLOY_HOOK}"
+
+                    echo "Deploying Frontend..."
+                    sh "curl -X POST ${RENDER_FRONTEND_DEPLOY_HOOK}"
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo '✔ Build + Deploy completed successfully!'
+            echo '✔ Build + Sonar + Deploy completed successfully!'
         }
         failure {
             echo '❌ Build failed — check logs.'
