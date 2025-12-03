@@ -9,9 +9,8 @@ pipeline {
     }
 
     tools {
-        jdk "jdk17"
-        maven "Maven"
-        nodejs "node20"
+        maven "mvn"
+        nodejs "node"
     }
 
     options {
