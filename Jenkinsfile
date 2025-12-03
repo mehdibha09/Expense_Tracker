@@ -78,36 +78,37 @@ pipeline {
             steps {
                 script {
                     // Fonction retry si timeout dépassé
-                    def retryForTimeoutExceeded = { count = 3, Closure closure ->
-                        for (int i = 1; i <= count; i++) {
-                            try {
-                                closure()
-                                break
-                            } catch (Exception error) {
-                                // On peut filtrer sur le message si on veut
-                                def hasTimeoutExceeded = error.toString().contains("ExceededTimeout")
-                                int retriesLeft = count - i
-                                echo "Timeout exceeded for Quality Gate. Retries left: ${retriesLeft}"
-                                if (retriesLeft == 0 || !hasTimeoutExceeded) {
-                                    throw error
-                                } else {
-                                    sleep(time: 5, unit: 'SECONDS')
-                                }
-                            }
-                        }
-                    }
+                   def retryForTimeoutExceeded = { int count, Closure closure ->
+    for (int i = 1; i <= count; i++) {
+        try {
+            closure()
+            break
+        } catch (Exception error) {
+            def hasTimeoutExceeded = error.toString().contains("ExceededTimeout")
+            int retriesLeft = count - i
+            echo "Timeout exceeded for Quality Gate. Retries left: ${retriesLeft}"
+            if (retriesLeft == 0 || !hasTimeoutExceeded) {
+                throw error
+            } else {
+                sleep(time: 5, unit: 'SECONDS')
+            }
+        }
+    }
+}
 
 
-                    retryForTimeoutExceeded {
-                        timeout(time: 10, unit: 'MINUTES') {
-                            def qg = waitForQualityGate()
-                            if (qg.status != 'OK') {
-                                error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
-                            } else {
-                                echo "✔ SonarQube Quality Gate passed."
-                            }
-                        }
-                    }
+
+                  retryForTimeoutExceeded(3) {
+    timeout(time: 10, unit: 'MINUTES') {
+        def qg = waitForQualityGate()
+        if (qg.status != 'OK') {
+            error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
+        } else {
+            echo "✔ SonarQube Quality Gate passed."
+        }
+    }
+}
+
                 }
             }
         }
