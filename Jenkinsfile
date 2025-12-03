@@ -61,7 +61,7 @@ stage('Sonar') {
     steps {
         dir('expense-tracker-service') {
             withSonarQubeEnv('sonoarQube') {
-                sh 'mvn sonar:sonar'
+                              sh 'mvn clean compile sonar:sonar'
             }
         }
     }
