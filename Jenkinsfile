@@ -62,14 +62,13 @@ stage('Sonar') {
         dir('expense-tracker-service') {
             withSonarQubeEnv('sonoarQube') {
                 sh 'mvn sonar:sonar'
-                sleep 10 // laisse SonarQube traiter le task
             }
         }
     }
     post {
         success {
             script {
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     def qualityGate = waitForQualityGate()
                     if (qualityGate.status != 'OK') {
                         error "SonarQube Quality Gate failed: ${qualityGate.status}"
