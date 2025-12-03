@@ -59,27 +59,18 @@ pipeline {
             }
         }
 
-        stage('Deploy to Render') {
-            steps {
-                script {
-                    echo "Deploying Backend..."
-                    def backendResponse = httpRequest(
-                        url: "${RENDER_BACKEND_DEPLOY_HOOK}",
-                        httpMode: 'POST',
-                        validResponseCodes: '200:299'
-                    )
-                    echo "Render Backend Deployment Response: ${backendResponse}"
+    stage('Deploy to Render') {
+    steps {
+        script {
+            echo "Deploying Backend..."
+            sh "curl -X POST ${RENDER_BACKEND_DEPLOY_HOOK}"
 
-                    echo "Deploying Frontend..."
-                    def frontendResponse = httpRequest(
-                        url: "${RENDER_FRONTEND_DEPLOY_HOOK}",
-                        httpMode: 'POST',
-                        validResponseCodes: '200:299'
-                    )
-                    echo "Render Frontend Deployment Response: ${frontendResponse}"
-                }
-            }
+            echo "Deploying Frontend..."
+            sh "curl -X POST ${RENDER_FRONTEND_DEPLOY_HOOK}"
         }
+    }
+}
+
     }
 
     post {
