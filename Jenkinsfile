@@ -1,30 +1,34 @@
-// This is the Jenkinsfile that will be used to build & test the project.
 pipeline {
     environment {
         RENDER_API_KEY = credentials('render-api-key')
-        // Replace with the backend deploy hook you copied
         RENDER_BACKEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g7rih5pdvs73a0p03g?key=Fb5-LPdrHNA"
-        // Replace with the frontend deploy hook you copied
         RENDER_FRONTEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g8m4vgi27c73bbdrlg?key=B2ksgpaa-vE"
     }
+
     agent any
+
     options {
         skipDefaultCheckout()
     }
+
     tools {
-        maven "mvn"
-        nodejs "node"
+        maven "Maven"     // ← Change to your actual Maven name
+        nodejs "node"     // ← Ensure NodeJS is defined in Jenkins
     }
 
-
     stages {
+
         stage('Checkout') {
             steps {
-                git branch: 'main', credentialsId: 'Git token', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
+                git branch: 'main',
+                    credentialsId: 'Git token',
+                    url: 'https://github.com/mehdibha09/Expense_Tracker.git'
             }
         }
+
         stage('Build') {
             parallel {
+
                 stage('Java') {
                     steps {
                         dir('expense-tracker-service') {
@@ -46,11 +50,10 @@ pipeline {
 
         stage('Test') {
             steps {
-                script {
-                    sh 'cd expense-tracker-service && mvn test'
-                }
+                sh 'cd expense-tracker-service && mvn test'
             }
         }
+
         stage('Deploy to Render') {
             steps {
                 script {
@@ -61,7 +64,7 @@ pipeline {
                         validResponseCodes: '200:299'
                     )
                     echo "Render Backend Deployment Response: ${backendResponse}"
-        
+
                     echo "Deploying Frontend..."
                     def frontendResponse = httpRequest(
                         url: "${RENDER_FRONTEND_DEPLOY_HOOK}",
@@ -73,14 +76,13 @@ pipeline {
             }
         }
     }
+
     post {
         success {
-            // Actions after the build succeeds
             echo 'Build was successful!'
         }
         failure {
-            // Actions after the build fails
             echo 'Build failed. Check logs.'
         }
     }
-    }
+}
