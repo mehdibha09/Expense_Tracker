@@ -83,18 +83,20 @@ pipeline {
                             try {
                                 closure()
                                 break
-                            } catch (FlowInterruptedException error) {
+                            } catch (Exception error) {
+                                // On peut filtrer sur le message si on veut
+                                def hasTimeoutExceeded = error.toString().contains("ExceededTimeout")
                                 int retriesLeft = count - i
-                                def hasTimeoutExceeded = error.causes[0] instanceof org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.ExceededTimeout
                                 echo "Timeout exceeded for Quality Gate. Retries left: ${retriesLeft}"
                                 if (retriesLeft == 0 || !hasTimeoutExceeded) {
                                     throw error
                                 } else {
-                                    sleep(time: 5, unit: 'SECONDS') // pause avant retry
+                                    sleep(time: 5, unit: 'SECONDS')
                                 }
                             }
                         }
                     }
+
 
                     retryForTimeoutExceeded {
                         timeout(time: 10, unit: 'MINUTES') {
