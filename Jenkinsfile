@@ -52,12 +52,28 @@ pipeline {
                 }
             }
         }
-
         stage('Test Backend') {
             steps {
                 sh 'cd expense-tracker-service && mvn test'
             }
         }
+        post {
+          success {
+              script {
+                  timeout(time: 2, unit: 'MINUTES') {
+                      def qualityGate = waitForQualityGate()
+                      if (qualityGate.status != 'OK') {
+                          error "SonarQube Quality Gate failed: ${qualityGate.status}"
+                      } else {
+                          echo "SonarQube analysis passed."
+                      }
+                  }
+              }
+          }
+          failure {
+              echo "SonarQube analysis failed during execution."
+          }
+      }
 
     stage('Deploy to Render') {
     steps {
