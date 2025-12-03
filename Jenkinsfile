@@ -1,19 +1,21 @@
+
 pipeline {
+    agent any
+
     environment {
         RENDER_API_KEY = credentials('render-api-key')
         RENDER_BACKEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g7rih5pdvs73a0p03g?key=Fb5-LPdrHNA"
         RENDER_FRONTEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g8m4vgi27c73bbdrlg?key=B2ksgpaa-vE"
     }
 
-    agent any
+    tools {
+        jdk "jdk17"
+        maven "Maven"
+        nodejs "node20"
+    }
 
     options {
         skipDefaultCheckout()
-    }
-
-    tools {
-        maven "Maven"     // ← Change to your actual Maven name
-        nodejs "node"     // ← Ensure NodeJS is defined in Jenkins
     }
 
     stages {
@@ -29,17 +31,21 @@ pipeline {
         stage('Build') {
             parallel {
 
-                stage('Java') {
+                stage('Java Backend') {
                     steps {
                         dir('expense-tracker-service') {
+                            sh 'java -version'
+                            sh 'mvn -version'
                             sh 'mvn clean install'
                         }
                     }
                 }
 
-                stage('Angular') {
+                stage('Angular Frontend') {
                     steps {
                         dir('expense-tracker-ui') {
+                            sh 'node -v'
+                            sh 'npm -v'
                             sh 'npm install'
                             sh './node_modules/.bin/ng build --configuration production'
                         }
@@ -48,7 +54,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Test Backend') {
             steps {
                 sh 'cd expense-tracker-service && mvn test'
             }
@@ -79,10 +85,10 @@ pipeline {
 
     post {
         success {
-            echo 'Build was successful!'
+            echo '✔ Build + Deploy completed successfully!'
         }
         failure {
-            echo 'Build failed. Check logs.'
+            echo '❌ Build failed — check logs.'
         }
     }
 }
