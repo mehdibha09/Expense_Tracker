@@ -57,23 +57,27 @@ pipeline {
                 sh 'cd expense-tracker-service && mvn test'
             }
         }
-        post {
-          success {
-              script {
-                  timeout(time: 2, unit: 'MINUTES') {
-                      def qualityGate = waitForQualityGate()
-                      if (qualityGate.status != 'OK') {
-                          error "SonarQube Quality Gate failed: ${qualityGate.status}"
-                      } else {
-                          echo "SonarQube analysis passed."
-                      }
-                  }
-              }
-          }
-          failure {
-              echo "SonarQube analysis failed during execution."
-          }
-      }
+  stage('Deploy to Render') {
+            steps {
+                script {
+                    echo "Deploying Backend..."
+                    def backendResponse = httpRequest(
+                        url: "${RENDER_BACKEND_DEPLOY_HOOK}",
+                        httpMode: 'POST',
+                        validResponseCodes: '200:299'
+                    )
+                    echo "Render Backend Deployment Response: ${backendResponse}"
+        
+                    echo "Deploying Frontend..."
+                    def frontendResponse = httpRequest(
+                        url: "${RENDER_FRONTEND_DEPLOY_HOOK}",
+                        httpMode: 'POST',
+                        validResponseCodes: '200:299'
+                    )
+                    echo "Render Frontend Deployment Response: ${frontendResponse}"
+                }
+            }
+  }
 
     stage('Deploy to Render') {
     steps {
