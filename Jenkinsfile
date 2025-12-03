@@ -60,7 +60,7 @@ pipeline {
         stage('Sonar') {
       steps {
           dir('expense-tracker-service') {
-              withSonarQubeEnv('sonarqube-25.4.0.105899') {
+              withSonarQubeEnv('sonoarQube') {
                   sh 'mvn sonar:sonar'
               }
           }
