@@ -51,18 +51,7 @@ pipeline {
                 }
             }
         }
-    }
-    post {
-        success {
-            // Actions after the build succeeds
-            echo 'Build was successful!'
-        }
-        failure {
-            // Actions after the build fails
-            echo 'Build failed. Check logs.'
-        }
-    }
-         stage('Deploy to Render') {
+        stage('Deploy to Render') {
             steps {
                 script {
                     echo "Deploying Backend..."
@@ -83,4 +72,15 @@ pipeline {
                 }
             }
         }
+    }
+    post {
+        success {
+            // Actions after the build succeeds
+            echo 'Build was successful!'
+        }
+        failure {
+            // Actions after the build fails
+            echo 'Build failed. Check logs.'
+        }
+    }
     }
