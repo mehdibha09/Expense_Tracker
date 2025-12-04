@@ -62,53 +62,26 @@ pipeline {
             steps {
                 dir('expense-tracker-service') {
                     withSonarQubeEnv('sonoarQube') {
-                        sh """
-                        mvn clean compile sonar:sonar \
-                            -Dsonar.projectKey=expenseTracker \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.login=${SONAR_TOKEN} \
-                            -Dsonar.java.binaries=target/classes
-                        """
+                        sh 'mvn sonar:sonar'
                     }
                 }
             }
-        }
 
-        stage('Quality Gate') {
-            steps {
-                script {
-                    // Fonction retry si timeout dépassé
-                   def retryForTimeoutExceeded = { int count, Closure closure ->
-    for (int i = 1; i <= count; i++) {
-        try {
-            closure()
-            break
-        } catch (Exception error) {
-            def hasTimeoutExceeded = error.toString().contains("ExceededTimeout")
-            int retriesLeft = count - i
-            echo "Timeout exceeded for Quality Gate. Retries left: ${retriesLeft}"
-            if (retriesLeft == 0 || !hasTimeoutExceeded) {
-                throw error
-            } else {
-                sleep(time: 5, unit: 'SECONDS')
-            }
-        }
-    }
-}
-
-
-
-                  retryForTimeoutExceeded(3) {
-    timeout(time: 10, unit: 'MINUTES') {
-        def qg = waitForQualityGate()
-        if (qg.status != 'OK') {
-            error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
-        } else {
-            echo "✔ SonarQube Quality Gate passed."
-        }
-    }
-}
-
+            post {
+                success {
+                    script {
+                        timeout(time: 2, unit: 'MINUTES') {
+                            def qualityGate = waitForQualityGate()
+                            if (qualityGate.status != 'OK') {
+                                error "SonarQube Quality Gate failed: ${qualityGate.status}"
+                            } else {
+                                echo "✔ SonarQube analysis passed."
+                            }
+                        }
+                    }
+                }
+                failure {
+                    echo "❌ SonarQube analysis failed during execution."
                 }
             }
         }
