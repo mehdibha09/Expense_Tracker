@@ -1,0 +1,27 @@
+name: Gitleaks Scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache Gitleaks
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/gitleaks
+          key: ${{ runner.os }}-gitleaks-${{ hashFiles('**/.gitleaks.toml') }}
+
+      - name: Gitleaks Scan
+        uses: zricethezav/gitleaks-action@v8.15.0
+        with:
+          config-path: .gitleaks.toml
+          scan: "full"
+          args: "--redact"
