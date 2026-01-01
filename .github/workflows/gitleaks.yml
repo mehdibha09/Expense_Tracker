@@ -20,7 +20,7 @@ jobs:
           key: ${{ runner.os }}-gitleaks-${{ hashFiles('**/.gitleaks.toml') }}
 
       - name: Gitleaks Scan
-        uses: zricethezav/gitleaks-action@v8.15.0
+        uses: zricethezav/gitleaks-action@master
         with:
           config-path: .gitleaks.toml
           scan: "full"
