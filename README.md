@@ -4,4 +4,3 @@
 
 **Username:** `user`  
 **Password:** `password`
-test
