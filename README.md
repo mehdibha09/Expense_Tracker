@@ -4,3 +4,4 @@
 
 **Username:** `user`  
 **Password:** `password`
+tests
