@@ -13,15 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Cache Gitleaks
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/gitleaks
-          key: ${{ runner.os }}-gitleaks-${{ hashFiles('**/.gitleaks.toml') }}
+      # - name: Cache Gitleaks
+      #   uses: actions/cache@v3
 
       - name: Gitleaks Scan
         uses: zricethezav/gitleaks-action@master
         with:
-          config-path: .gitleaks.toml
           scan: "full"
           args: "--redact"
