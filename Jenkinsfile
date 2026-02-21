@@ -48,20 +48,19 @@ pipeline {
 
 stage('Start Security VM') {
     steps {
-        sshagent(credentials: ['host-ssh-key']) {
-            sh '''
-            ssh -o StrictHostKeyChecking=no mehdi@192.168.1.15 "
-                STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-                if echo $STATE | grep -q poweroff; then
-                    echo 'Starting Security VM'
-                    VBoxManage startvm securite --type headless
-                    sleep 15
-                else
-                    echo 'Security VM already running'
-                fi
-            "
-            '''
-        }
+        sh '''
+        chmod 600 /home/jenkins/.ssh/id_rsa_vmjenkins_nopass
+        ssh -i /home/jenkins/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+if echo $STATE | grep -q poweroff; then
+    echo "Starting Security VM"
+    VBoxManage startvm securite --type headless
+    sleep 15
+else
+    echo "Security VM already running"
+fi
+EOF
+        '''
     }
 }
 
