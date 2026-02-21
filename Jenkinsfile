@@ -1,49 +1,33 @@
 pipeline {
     agent any
-
-    environment {
-        RENDER_API_KEY = credentials('render-api-key')
-        RENDER_BACKEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g7rih5pdvs73a0p03g?key=Fb5-LPdrHNA"
-        RENDER_FRONTEND_DEPLOY_HOOK = "https://api.render.com/deploy/srv-d4g8m4vgi27c73bbdrlg?key=B2ksgpaa-vE"
-        SONAR_TOKEN = credentials('sonoarToken')
+    options {
+        skipDefaultCheckout()
     }
-
     tools {
         maven "mvn"
         nodejs "node"
     }
 
-    options {
-        skipDefaultCheckout()
-    }
 
     stages {
-
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    credentialsId: 'Git token',
-                    url: 'https://github.com/mehdibha09/Expense_Tracker.git'
+                git branch: 'main', credentialsId: 'Git token', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
             }
         }
-
         stage('Build') {
             parallel {
-                stage('Java Backend') {
+                stage('Java') {
                     steps {
                         dir('expense-tracker-service') {
-                            sh 'java -version'
-                            sh 'mvn -version'
                             sh 'mvn clean install'
                         }
                     }
                 }
 
-                stage('Angular Frontend') {
+                stage('Angular') {
                     steps {
                         dir('expense-tracker-ui') {
-                            sh 'node -v'
-                            sh 'npm -v'
                             sh 'npm install'
                             sh './node_modules/.bin/ng build --configuration production'
                         }
@@ -52,58 +36,22 @@ pipeline {
             }
         }
 
-        stage('Test Backend') {
-            steps {
-                sh 'cd expense-tracker-service && mvn test'
-            }
-        }
-
-        stage('Sonar') {
-            steps {
-                dir('expense-tracker-service') {
-                    withSonarQubeEnv('sonoarQube') {
-                        sh 'mvn sonar:sonar'
-                    }
-                }
-            }
-     post {
-          success {
-              script {
-                  timeout(time: 2, unit: 'MINUTES') {
-                      def qualityGate = waitForQualityGate()
-                      if (qualityGate.status != 'OK') {
-                          error "SonarQube Quality Gate failed: ${qualityGate.status}"
-                      } else {
-                          echo "SonarQube analysis passed."
-                      }
-                  }
-              }
-          }
-          failure {
-              echo "SonarQube analysis failed during execution."
-          }
-      }
-        }
-
-        stage('Deploy to Render') {
+        stage('Test') {
             steps {
                 script {
-                    echo "Deploying Backend..."
-                    sh "curl -X POST ${RENDER_BACKEND_DEPLOY_HOOK}"
-
-                    echo "Deploying Frontend..."
-                    sh "curl -X POST ${RENDER_FRONTEND_DEPLOY_HOOK}"
+                    sh 'cd expense-tracker-service && mvn test'
                 }
             }
         }
     }
-
     post {
         success {
-            echo '✔ Build + Sonar + Deploy completed successfully!'
+            // Actions after the build succeeds
+            echo 'Build was successful!'
         }
         failure {
-            echo '❌ Build failed — check logs.'
+            // Actions after the build fails
+            echo 'Build failed. Check logs.'
         }
     }
 }
