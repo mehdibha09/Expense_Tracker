@@ -17,39 +17,38 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            parallel {
-                stage('Java') {
-                    steps {
-                        dir('expense-tracker-service') {
-                            sh 'mvn clean install'
-                        }
-                    }
-                }
+        // stage('Build') {
+        //     parallel {
+        //         stage('Java') {
+        //             steps {
+        //                 dir('expense-tracker-service') {
+        //                     sh 'mvn clean install'
+        //                 }
+        //             }
+        //         }
 
-                stage('Angular') {
-                    steps {
-                        dir('expense-tracker-ui') {
-                            sh 'npm install'
-                            sh './node_modules/.bin/ng build --configuration production'
-                        }
-                    }
-                }
-            }
-        }
+        //         stage('Angular') {
+        //             steps {
+        //                 dir('expense-tracker-ui') {
+        //                     sh 'npm install'
+        //                     sh './node_modules/.bin/ng build --configuration production'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Test') {
-            steps {
-                dir('expense-tracker-service') {
-                    sh 'mvn test'
-                }
-            }
-        }
+        // stage('Test') {
+        //     steps {
+        //         dir('expense-tracker-service') {
+        //             sh 'mvn test'
+        //         }
+        //     }
+        // }
 
 stage('Start Security VM') {
     steps {
         sh '''
-        chmod 600 /home/jenkins/.ssh/id_rsa_vmjenkins_nopass
         ssh -i /home/jenkins/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
 STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
 if echo $STATE | grep -q poweroff; then
