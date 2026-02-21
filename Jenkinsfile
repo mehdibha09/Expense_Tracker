@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', credentialsId: 'Git token', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
+                git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
             }
         }
         stage('Build') {
@@ -43,7 +43,76 @@ pipeline {
                 }
             }
         }
+        // attendre que la VM soit complètement opérationnelle
+stage('WaitForVM') {
+    steps {
+        echo 'Waiting 60 seconds for Security VM to boot...'
+        sleep(time: 60, unit: 'SECONDS')
     }
+}
+
+stage('Sonar') {
+      steps {
+          dir('expense-tracker-service') {
+              withSonarQubeEnv('sonarqube-25.4.0.105899') {
+                  sh 'mvn sonar:sonar'
+              }
+          }
+      }
+    //Add this code for sonar waitForQualityGate.
+      post {
+          success {
+              script {
+                  timeout(time: 2, unit: 'MINUTES') {
+                      def qualityGate = waitForQualityGate()
+                      if (qualityGate.status != 'OK') {
+                          error "SonarQube Quality Gate failed: ${qualityGate.status}"
+                      } else {
+                          echo "SonarQube analysis passed."
+                      }
+                  }
+              }
+          }
+          failure {
+              echo "SonarQube analysis failed during execution."
+          }
+      }
+}
+   stage('StartSecurityVM') {
+    steps {
+        sshagent(credentials: ['host-ssh-key']) {
+            sh '''
+            ssh -o StrictHostKeyChecking=no mehdi@192.168.1.15 "
+                STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+                if echo $STATE | grep -q poweroff; then
+                    echo 'Starting Security VM'
+                    VBoxManage startvm securite --type headless
+                else
+                    echo 'Security VM already running'
+                fi
+            "
+            '''
+        }
+    }
+}
+stage('StopSecurityVM') {
+    steps {
+        sshagent(credentials: ['host-ssh-key']) {
+            sh '''
+            ssh -o StrictHostKeyChecking=no user@IP_MACHINE_HOTE "
+                STATE=$(VBoxManage showvminfo SecurityVM --machinereadable | grep VMState=)
+                if echo $STATE | grep -q running; then
+                    echo 'Stopping Security VM'
+                    VBoxManage controlvm SecurityVM acpipowerbutton
+                else
+                    echo 'Security VM already stopped'
+                fi
+            "
+            '''
+        }
+    }
+}
+    }   
     post {
         success {
             // Actions after the build succeeds
