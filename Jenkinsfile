@@ -46,23 +46,23 @@ pipeline {
             }
         }
 
-        stage('Start Security VM') {
-            steps {
-                sshagent(credentials: ['host-ssh-key']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no mehdi@192.168.1.15 "
-                        STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-                        if echo $STATE | grep -q poweroff; then
-                            echo 'Starting Security VM'
-                            VBoxManage startvm securite --type headless
-                        else
-                            echo 'Security VM already running'
-                        fi
-                    "
-                    '''
-                }
-            }
+stage('StartSecurityVM') {
+    steps {
+        withCredentials([file(credentialsId: 'host-ssh-key', variable: 'SSH_KEY')]) {
+            sh '''
+            ssh -i $SSH_KEY -o StrictHostKeyChecking=no mehdi@192.168.1.15 "
+                STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+                if echo $STATE | grep -q poweroff; then
+                    echo 'Starting Security VM'
+                    VBoxManage startvm securite --type headless
+                else
+                    echo 'Security VM already running'
+                fi
+            "
+            '''
         }
+    }
+}
 
         stage('Wait for VM') {
             steps {
