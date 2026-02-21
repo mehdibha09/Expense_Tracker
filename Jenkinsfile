@@ -50,15 +50,16 @@ stage('StartSecurityVM') {
     steps {
         sshagent(credentials: ['host-ssh-key']) {
             sh '''
-            ssh -o StrictHostKeyChecking=no mehdi@192.168.1.15 "
-                STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-                if echo $STATE | grep -q poweroff; then
-                    echo 'Starting Security VM'
-                    VBoxManage startvm securite --type headless
-                else
-                    echo 'Security VM already running'
-                fi
-            "
+            ssh -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+if echo $STATE | grep -q poweroff; then
+    echo "Starting Security VM"
+    VBoxManage startvm securite --type headless
+    sleep 15  # attendre que la VM démarre
+else
+    echo "Security VM already running"
+fi
+EOF
             '''
         }
     }
