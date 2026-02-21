@@ -17,39 +17,39 @@ pipeline {
             }
         }
 
-        // stage('Build') {
-        //     parallel {
-        //         stage('Java') {
-        //             steps {
-        //                 dir('expense-tracker-service') {
-        //                     sh 'mvn clean install'
-        //                 }
-        //             }
-        //         }
+        stage('Build') {
+            parallel {
+                stage('Java') {
+                    steps {
+                        dir('expense-tracker-service') {
+                            sh 'mvn clean install'
+                        }
+                    }
+                }
 
-        //         stage('Angular') {
-        //             steps {
-        //                 dir('expense-tracker-ui') {
-        //                     sh 'npm install'
-        //                     sh './node_modules/.bin/ng build --configuration production'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+                stage('Angular') {
+                    steps {
+                        dir('expense-tracker-ui') {
+                            sh 'npm install'
+                            sh './node_modules/.bin/ng build --configuration production'
+                        }
+                    }
+                }
+            }
+        }
 
-        // stage('Test') {
-        //     steps {
-        //         dir('expense-tracker-service') {
-        //             sh 'mvn test'
-        //         }
-        //     }
-        // }
+        stage('Test') {
+            steps {
+                dir('expense-tracker-service') {
+                    sh 'mvn test'
+                }
+            }
+        }
 
-stage('Start Security VM') {
-    steps {
-        sh '''
-        ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+        stage('Start Security VM') {
+            steps {
+                sh '''
+                ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
 STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
 if echo $STATE | grep -q poweroff; then
     echo "Starting Security VM"
@@ -59,9 +59,9 @@ else
     echo "Security VM already running"
 fi
 EOF
-        '''
-    }
-}
+                '''
+            }
+        }
 
         stage('Wait for VM') {
             steps {
@@ -73,7 +73,7 @@ EOF
         stage('Sonar Analysis') {
             steps {
                 dir('expense-tracker-service') {
-                    withSonarQubeEnv('sonarqube-25.4.0.105899') {
+                    withSonarQubeEnv('SonarQubeScanner') {
                         sh 'mvn sonar:sonar'
                     }
                 }
@@ -96,20 +96,17 @@ EOF
 
         stage('Stop Security VM') {
             steps {
-                withCredentials([file(credentialsId: 'host-ssh-key', variable: 'SSH_KEY')]) {
-                    sh '''
-                    chmod 600 "$SSH_KEY"
-                    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+                sh '''
+                ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
 STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
 if echo $STATE | grep -q running; then
-                            echo 'Stopping Security VM'
-                            VBoxManage controlvm securite acpipowerbutton
-                        else
-                            echo 'Security VM already stopped'
-                        fi
+    echo 'Stopping Security VM'
+    VBoxManage controlvm securite acpipowerbutton
+else
+    echo 'Security VM already stopped'
+fi
 EOF
-                    '''
-                }
+                '''
             }
         }
     }
