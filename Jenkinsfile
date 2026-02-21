@@ -49,7 +49,7 @@ pipeline {
 stage('Start Security VM') {
     steps {
         sh '''
-        ssh -i /home/jenkins/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+        ssh -i /home/vagrant/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
 STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
 if echo $STATE | grep -q poweroff; then
     echo "Starting Security VM"
