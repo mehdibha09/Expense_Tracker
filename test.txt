@@ -1,2 +1,1 @@
 FAKE_KEY=123456
-test
