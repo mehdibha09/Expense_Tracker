@@ -43,22 +43,7 @@ pipeline {
                 }
             }
         }
-        // attendre que la VM soit complètement opérationnelle
-stage('WaitForVM') {
-    steps {
-        echo 'Waiting 60 seconds for Security VM to boot...'
-        sleep(time: 60, unit: 'SECONDS')
-    }
-}
 
-stage('Sonar') {
-      steps {
-          dir('expense-tracker-service') {
-              withSonarQubeEnv('sonarqube-25.4.0.105899') {
-                  sh 'mvn sonar:sonar'
-              }
-          }
-      }
     //Add this code for sonar waitForQualityGate.
       post {
           success {
@@ -95,6 +80,22 @@ stage('Sonar') {
         }
     }
 }
+        // attendre que la VM soit complètement opérationnelle
+stage('WaitForVM') {
+    steps {
+        echo 'Waiting 60 seconds for Security VM to boot...'
+        sleep(time: 60, unit: 'SECONDS')
+    }
+}
+
+stage('Sonar') {
+      steps {
+          dir('expense-tracker-service') {
+              withSonarQubeEnv('sonarqube-25.4.0.105899') {
+                  sh 'mvn sonar:sonar'
+              }
+          }
+      }
 stage('StopSecurityVM') {
     steps {
         sshagent(credentials: ['host-ssh-key']) {
