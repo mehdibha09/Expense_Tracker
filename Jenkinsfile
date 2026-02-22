@@ -98,6 +98,7 @@ pipeline {
         // }
 
         stage('Build Docker Images') {
+            agent { label 'docker' }
             parallel {
                 stage('Backend Image') {
                     steps {
@@ -122,6 +123,7 @@ pipeline {
         }
 
 stage('Push Docker Images to Nexus') {
+            agent { label 'docker' }
     steps {
         withCredentials([usernamePassword(
             credentialsId: 'nexus-creds',
