@@ -112,7 +112,6 @@ pipeline {
                 }
 
                 stage('Frontend Image') {
-                    agent { label 'docker' }
                     steps {
                         dir('expense-tracker-ui') {
                             sh '''
@@ -125,7 +124,6 @@ pipeline {
         }
 
         stage('Push Docker Images to Nexus') {
-            agent { label 'docker' }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'nexus-creds',
