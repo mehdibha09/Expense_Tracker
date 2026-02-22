@@ -98,29 +98,19 @@ pipeline {
         //     }
         // }
 
-        stage('Build Docker Images') {
-            parallel {
-                stage('Backend Image') {
-                    steps {
-                        dir('expense-tracker-service') {
-                            sh '''
-                            docker build -t my-nexus-repo/expense-backend:latest .
-                            '''
-                        }
-                    }
-                }
-
-                stage('Frontend Image') {
-                    steps {
-                        dir('expense-tracker-ui') {
-                            sh '''
-                            docker build -t my-nexus-repo/expense-frontend:latest .
-                            '''
-                        }
-                    }
-                }
-            }
+   stage('Build Docker Images') {
+    steps {
+        // Backend
+        dir('expense-tracker-service') {
+            sh 'docker build -t my-nexus-repo/expense-backend:latest .'
         }
+
+        // Frontend
+        dir('expense-tracker-ui') {
+            sh 'docker build -t my-nexus-repo/expense-frontend:latest .'
+        }
+    }
+}
 
         stage('Push Docker Images to Nexus') {
             steps {
