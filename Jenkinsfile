@@ -70,30 +70,33 @@ EOF
             }
         }
 
-stage('Sonar Analysis') {
-    steps {
-        dir('expense-tracker-service') {
-            withSonarQubeEnv('SonarQubeScanner') {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
-                }
-            }
-        }
-    }
-}
-        stage('Quality Gate') {
+        stage('Sonar Analysis') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    script {
-                        def qualityGate = waitForQualityGate()
-                        if (qualityGate.status != 'OK') {
-                            error "SonarQube Quality Gate failed: ${qualityGate.status}"
-                        }
-                        echo 'SonarQube analysis passed.'
+                dir('expense-tracker-service') {
+                    withSonarQubeEnv('SonarQubeScanner') {
+                        sh 'mvn sonar:sonar'
                     }
                 }
             }
+                  post {
+          success {
+              script {
+                  timeout(time: 2, unit: 'MINUTES') {
+                      def qualityGate = waitForQualityGate()
+                      if (qualityGate.status != 'OK') {
+                          error "SonarQube Quality Gate failed: ${qualityGate.status}"
+                      } else {
+                          echo "SonarQube analysis passed."
+                      }
+                  }
+              }
+          }
+          failure {
+              echo "SonarQube analysis failed during execution."
+          }
+      }
         }
+
 
         stage('Stop Security VM') {
             steps {
