@@ -70,7 +70,17 @@ EOF
             }
         }
 
-
+stage('Sonar Analysis') {
+    steps {
+        dir('expense-tracker-service') {
+            withSonarQubeEnv('SonarQubeScanner') {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
+                }
+            }
+        }
+    }
+}
         stage('Quality Gate') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
