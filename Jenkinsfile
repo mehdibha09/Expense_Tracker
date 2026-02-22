@@ -99,9 +99,8 @@ pipeline {
         // }
 
         stage('Build Docker Images') {
-            steps {
+            parallel {
                 stage('Backend Image') {
-                    agent { label 'docker' }
                     steps {
                         dir('expense-tracker-service') {
                             sh '''
