@@ -99,7 +99,7 @@ pipeline {
         // }
 
         stage('Build Docker Images') {
-            parallel {
+            steps {
                 stage('Backend Image') {
                     agent { label 'docker' }
                     steps {
