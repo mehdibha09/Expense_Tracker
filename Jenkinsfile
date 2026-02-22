@@ -46,73 +46,114 @@ pipeline {
             }
         }
 
-        stage('Start Security VM') {
-            steps {
-                sh '''
-                ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
-STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-if echo $STATE | grep -q poweroff; then
-    echo "Starting Security VM"
-    VBoxManage startvm securite --type headless
-    sleep 15
-else
-    echo "Security VM already running"
-fi
-EOF
-                '''
-            }
-        }
+//         stage('Start Security VM') {
+//             steps {
+//                 sh '''
+//                 ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+// STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+// if echo $STATE | grep -q poweroff; then
+//     echo "Starting Security VM"
+//     VBoxManage startvm securite --type headless
+//     sleep 15
+// else
+//     echo "Security VM already running"
+// fi
+// EOF
+//                 '''
+//             }
+//         }
 
-        stage('Wait for VM') {
-            steps {
-                echo 'Waiting 60 seconds for Security VM to boot...'
-                sleep(time: 60, unit: 'SECONDS')
-            }
-        }
+        // stage('Wait for VM') {
+        //     steps {
+        //         echo 'Waiting 60 seconds for Security VM to boot...'
+        //         sleep(time: 60, unit: 'SECONDS')
+        //     }
+        // }
 
-        stage('Sonar Analysis') {
-            steps {
-                dir('expense-tracker-service') {
-                    withSonarQubeEnv('SonarQubeScanner') {
-                        sh 'mvn sonar:sonar'
+        // stage('Sonar Analysis') {
+        //     steps {
+        //         dir('expense-tracker-service') {
+        //             withSonarQubeEnv('SonarQubeScanner') {
+        //                 sh 'mvn sonar:sonar'
+        //             }
+        //         }
+        //     }
+        //     post {
+        //         success {
+        //             script {
+        //                 timeout(time: 2, unit: 'MINUTES') {
+        //                     def qualityGate = waitForQualityGate()
+        //                     if (qualityGate.status != 'OK') {
+        //                         error "SonarQube Quality Gate failed: ${qualityGate.status}"
+        //                     } else {
+        //                         echo "SonarQube analysis passed."
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         failure {
+        //             echo "SonarQube analysis failed during execution."
+        //         }
+        //     }
+        // }
+
+        stage('Build Docker Images') {
+            parallel {
+                stage('Backend Image') {
+                    steps {
+                        dir('expense-tracker-service') {
+                            sh '''
+                            docker build -t my-nexus-repo/expense-backend:latest .
+                            '''
+                        }
+                    }
+                }
+
+                stage('Frontend Image') {
+                    steps {
+                        dir('expense-tracker-ui') {
+                            sh '''
+                            docker build -t my-nexus-repo/expense-frontend:latest .
+                            '''
+                        }
                     }
                 }
             }
-                  post {
-          success {
-              script {
-                  timeout(time: 2, unit: 'MINUTES') {
-                      def qualityGate = waitForQualityGate()
-                      if (qualityGate.status != 'OK') {
-                          error "SonarQube Quality Gate failed: ${qualityGate.status}"
-                      } else {
-                          echo "SonarQube analysis passed."
-                      }
-                  }
-              }
-          }
-          failure {
-              echo "SonarQube analysis failed during execution."
-          }
-      }
         }
 
-
-        stage('Stop Security VM') {
-            steps {
-                sh '''
-                ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
-STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-if echo $STATE | grep -q running; then
-    echo 'Stopping Security VM'
-    VBoxManage controlvm securite acpipowerbutton
-else
-    echo 'Security VM already stopped'
-fi
-EOF
-                '''
-            }
+stage('Push Docker Images to Nexus') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'nexus-creds',
+            usernameVariable: 'NEXUS_USER',
+            passwordVariable: 'NEXUS_PASSWORD'
+        )]) {
+            sh '''
+            echo $NEXUS_PASSWORD | docker login 192.168.56.31:8082 -u $NEXUS_USER --password-stdin
+            docker tag expense-backend:latest 192.168.56.31:8082/expense-backend:latest
+            docker tag expense-frontend:latest 192.168.56.31:8082/expense-frontend:latest
+            docker push 192.168.56.31:8082/expense-backend:latest
+            docker push 192.168.56.31:8082/expense-frontend:latest
+            '''
         }
+    }
+}
+
+//         stage('Stop Security VM') {
+//             steps {
+//                 sh '''
+//                 ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+// STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+// if echo $STATE | grep -q running; then
+//     echo 'Stopping Security VM'
+//     VBoxManage controlvm securite acpipowerbutton
+// else
+//     echo 'Security VM already stopped'
+// fi
+// EOF
+//                 '''
+//             }
+//         }
     }
 
     post {
