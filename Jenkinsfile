@@ -8,6 +8,7 @@ pipeline {
     tools {
         maven 'mvn'
         nodejs 'node'
+        
     }
 
     stages {
@@ -98,9 +99,9 @@ pipeline {
         // }
 
         stage('Build Docker Images') {
-            agent { label 'docker' }
             parallel {
                 stage('Backend Image') {
+                    agent { label 'docker' }
                     steps {
                         dir('expense-tracker-service') {
                             sh '''
@@ -111,6 +112,7 @@ pipeline {
                 }
 
                 stage('Frontend Image') {
+                    agent { label 'docker' }
                     steps {
                         dir('expense-tracker-ui') {
                             sh '''
@@ -122,24 +124,24 @@ pipeline {
             }
         }
 
-stage('Push Docker Images to Nexus') {
+        stage('Push Docker Images to Nexus') {
             agent { label 'docker' }
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'nexus-creds',
-            usernameVariable: 'NEXUS_USER',
-            passwordVariable: 'NEXUS_PASSWORD'
-        )]) {
-            sh '''
-            echo $NEXUS_PASSWORD | docker login 192.168.56.31:8082 -u $NEXUS_USER --password-stdin
-            docker tag expense-backend:latest 192.168.56.31:8082/expense-backend:latest
-            docker tag expense-frontend:latest 192.168.56.31:8082/expense-frontend:latest
-            docker push 192.168.56.31:8082/expense-backend:latest
-            docker push 192.168.56.31:8082/expense-frontend:latest
-            '''
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh '''
+                    echo $NEXUS_PASSWORD | docker login 192.168.56.31:8082 -u $NEXUS_USER --password-stdin
+                    docker tag expense-backend:latest 192.168.56.31:8082/expense-backend:latest
+                    docker tag expense-frontend:latest 192.168.56.31:8082/expense-frontend:latest
+                    docker push 192.168.56.31:8082/expense-backend:latest
+                    docker push 192.168.56.31:8082/expense-frontend:latest
+                    '''
+                }
+            }
         }
-    }
-}
 
 //         stage('Stop Security VM') {
 //             steps {
