@@ -137,26 +137,27 @@ pipeline {
                         usernameVariable: 'NEXUS_USER',
                         passwordVariable: 'NEXUS_PASSWORD'
                     )]) {
-                        sh '''
+                  sh '''
+                        set -x
                         echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
                         docker pull 192.168.56.30:8082/expense-backend:latest
                         docker pull 192.168.56.30:8082/expense-frontend:latest
                         docker run --rm \
-                          -v /var/run/docker.sock:/var/run/docker.sock \
-                          -v /mnt/nfs/trivy-results:/results \
-                          aquasec/trivy image \
-                          --exit-code 1 --severity HIGH,CRITICAL \
-                          --format json \
-                          --output /results/expense-backend.json \
-                          192.168.56.30:8082/expense-backend:latest
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v /mnt/nfs/trivy-results:/results \
+                        aquasec/trivy image \
+                        --exit-code 1 --severity HIGH,CRITICAL \
+                        --format json \
+                        --output /results/expense-backend.json \
+                        192.168.56.30:8082/expense-backend:latest
                         docker run --rm \
-                          -v /var/run/docker.sock:/var/run/docker.sock \
-                          -v /mnt/nfs/trivy-results:/results \
-                          aquasec/trivy image \
-                          --exit-code 1 --severity HIGH,CRITICAL \
-                          --format json \
-                          --output /results/expense-frontend.json \
-                          192.168.56.30:8082/expense-frontend:latest
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v /mnt/nfs/trivy-results:/results \
+                        aquasec/trivy image \
+                        --exit-code 1 --severity HIGH,CRITICAL \
+                        --format json \
+                        --output /results/expense-frontend.json \
+                        192.168.56.30:8082/expense-frontend:latest
                         '''
                     }
                 }
