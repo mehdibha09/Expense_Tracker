@@ -18,34 +18,34 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            parallel {
-                stage('Java') {
-                    steps {
-                        dir('expense-tracker-service') {
-                            sh 'mvn clean install'
-                        }
-                    }
-                }
+        // stage('Build') {
+        //     parallel {
+        //         stage('Java') {
+        //             steps {
+        //                 dir('expense-tracker-service') {
+        //                     sh 'mvn clean install'
+        //                 }
+        //             }
+        //         }
 
-                stage('Angular') {
-                    steps {
-                        dir('expense-tracker-ui') {
-                            sh 'npm install'
-                            sh './node_modules/.bin/ng build --configuration production'
-                        }
-                    }
-                }
-            }
-        }
+        //         stage('Angular') {
+        //             steps {
+        //                 dir('expense-tracker-ui') {
+        //                     sh 'npm install'
+        //                     sh './node_modules/.bin/ng build --configuration production'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Test') {
-            steps {
-                dir('expense-tracker-service') {
-                    sh 'mvn test'
-                }
-            }
-        }
+        // stage('Test') {
+        //     steps {
+        //         dir('expense-tracker-service') {
+        //             sh 'mvn test'
+        //         }
+        //     }
+        // }
 
 //         stage('Start Security VM') {
 //             steps {
@@ -98,19 +98,19 @@ pipeline {
         //     }
         // }
 
-   stage('Build Docker Images') {
-    steps {
-        // Backend
-        dir('expense-tracker-service') {
-            sh 'docker build -t my-nexus-repo/expense-backend:latest .'
-        }
+//    stage('Build Docker Images') {
+//     steps {
+//         // Backend
+//         dir('expense-tracker-service') {
+//             sh 'docker build -t my-nexus-repo/expense-backend:latest .'
+//         }
 
-        // Frontend
-        dir('expense-tracker-ui') {
-            sh 'docker build -t my-nexus-repo/expense-frontend:latest .'
-        }
-    }
-}
+//         // Frontend
+//         dir('expense-tracker-ui') {
+//             sh 'docker build -t my-nexus-repo/expense-frontend:latest .'
+//         }
+//     }
+// }
 
         stage('Push Docker Images to Nexus') {
             steps {
