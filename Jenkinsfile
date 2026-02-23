@@ -121,8 +121,8 @@ pipeline {
                 )]) {
                     sh '''
                     echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
-                    docker tag expense-backend:latest 192.168.56.30:8082/expense-backend:latest
-                    docker tag expense-frontend:latest 192.168.56.30:8082/expense-frontend:latest
+                    docker tag my-nexus-repo/expense-backend:latest 192.168.56.30:8082/expense-backend:latest
+                    docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30:8082/expense-frontend:latest
                     docker push 192.168.56.30:8082/expense-backend:latest
                     docker push 192.168.56.30:8082/expense-frontend:latest
                     '''
