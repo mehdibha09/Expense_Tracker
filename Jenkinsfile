@@ -130,7 +130,7 @@ pipeline {
             // }
 
             stage('Security Scan') {
-                agent { label 'securite' }
+                agent { label 'Security' }
                 steps {
                     withCredentials([usernamePassword(
                         credentialsId: 'nexus-creds',
