@@ -18,34 +18,34 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            parallel {
-                stage('Java') {
-                    steps {
-                        dir('expense-tracker-service') {
-                            sh 'mvn clean install'
-                        }
-                    }
-                }
+        // stage('Build') {
+        //     parallel {
+        //         stage('Java') {
+        //             steps {
+        //                 dir('expense-tracker-service') {
+        //                     sh 'mvn clean install'
+        //                 }
+        //             }
+        //         }
 
-                stage('Angular') {
-                    steps {
-                        dir('expense-tracker-ui') {
-                            sh 'npm install'
-                            sh './node_modules/.bin/ng build --configuration production'
-                        }
-                    }
-                }
-            }
-        }
+        //         stage('Angular') {
+        //             steps {
+        //                 dir('expense-tracker-ui') {
+        //                     sh 'npm install'
+        //                     sh './node_modules/.bin/ng build --configuration production'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Test') {
-            steps {
-                dir('expense-tracker-service') {
-                    sh 'mvn test'
-                }
-            }
-        }
+        // stage('Test') {
+        //     steps {
+        //         dir('expense-tracker-service') {
+        //             sh 'mvn test'
+        //         }
+        //     }
+        // }
 
 //         stage('Start Security VM') {
 //             steps {
@@ -121,10 +121,10 @@ pipeline {
                 )]) {
                     sh '''
                     echo $NEXUS_PASSWORD | docker login 192.168.56.30:8081 -u $NEXUS_USER --password-stdin
-                    docker tag expense-backend:latest 192.168.56.30:8081/expense-backend:latest
-                    docker tag expense-frontend:latest 192.168.56.30:8081/expense-frontend:latest
-                    docker push 192.168.56.30:8081/expense-backend:latest
-                    docker push 192.168.56.30:8081/expense-frontend:latest
+                    docker tag expense-backend:latest 192.168.56.30:8081/all-image/expense-backend:latest
+                    docker tag expense-frontend:latest 192.168.56.30:8081/all-image/expense-frontend:latest
+                    docker push 192.168.56.30:8081/all-image/expense-backend:latest
+                    docker push 192.168.56.30:8081/all-image/expense-frontend:latest
                     '''
                 }
             }
