@@ -144,6 +144,7 @@ pipeline {
                         docker pull 192.168.56.30:8082/expense-frontend:latest
                         docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v trivy-db:/root/.cache/trivy \
                         -v /mnt/nfs/trivy-results:/results \
                         aquasec/trivy image \
                         --exit-code 1 --severity HIGH,CRITICAL \
@@ -152,6 +153,7 @@ pipeline {
                         192.168.56.30:8082/expense-backend:latest
                         docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v trivy-db:/root/.cache/trivy \
                         -v /mnt/nfs/trivy-results:/results \
                         aquasec/trivy image \
                         --exit-code 1 --severity HIGH,CRITICAL \
