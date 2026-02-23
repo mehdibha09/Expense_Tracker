@@ -98,19 +98,19 @@ pipeline {
         //     }
         // }
 
-   stage('Build Docker Images') {
-    steps {
-        // Backend
-        dir('expense-tracker-service') {
-            sh 'docker build -t my-nexus-repo/expense-backend:latest .'
-        }
+//    stage('Build Docker Images') {
+//     steps {
+//         // Backend
+//         dir('expense-tracker-service') {
+//             sh 'docker build -t my-nexus-repo/expense-backend:latest .'
+//         }
 
-        // Frontend
-        dir('expense-tracker-ui') {
-            sh 'docker build -t my-nexus-repo/expense-frontend:latest .'
-        }
-    }
-}
+//         // Frontend
+//         dir('expense-tracker-ui') {
+//             sh 'docker build -t my-nexus-repo/expense-frontend:latest .'
+//         }
+//     }
+// }
 
         stage('Push Docker Images to Nexus') {
             steps {
@@ -120,11 +120,11 @@ pipeline {
                     passwordVariable: 'NEXUS_PASSWORD'
                 )]) {
                     sh '''
-                    echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
-                    docker tag expense-backend:latest 192.168.56.30:8082/expense-backend:latest
-                    docker tag expense-frontend:latest 192.168.56.30:8082/expense-frontend:latest
-                    docker push 192.168.56.30:8082/expense-backend:latest
-                    docker push 192.168.56.30:8082/expense-frontend:latest
+                    echo $NEXUS_PASSWORD | docker login 192.168.56.30:8081 -u $NEXUS_USER --password-stdin
+                    docker tag expense-backend:latest 192.168.56.30:8081/expense-backend:latest
+                    docker tag expense-frontend:latest 192.168.56.30:8081/expense-frontend:latest
+                    docker push 192.168.56.30:8081/expense-backend:latest
+                    docker push 192.168.56.30:8081/expense-frontend:latest
                     '''
                 }
             }
