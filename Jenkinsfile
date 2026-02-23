@@ -8,7 +8,6 @@ pipeline {
     tools {
         maven 'mvn'
         nodejs 'node'
-        
     }
 
     stages {
@@ -112,23 +111,56 @@ pipeline {
 //     }
 // }
 
-        stage('Push Docker Images to Nexus') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-creds',
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASSWORD'
-                )]) {
-                    sh '''
-                    echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
-                    docker tag my-nexus-repo/expense-backend:latest 192.168.56.30:8082/expense-backend:latest
-                    docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30:8082/expense-frontend:latest
-                    docker push 192.168.56.30:8082/expense-backend:latest
-                    docker push 192.168.56.30:8082/expense-frontend:latest
-                    '''
+            // stage('Push Docker Images to Nexus') {
+            //     steps {
+            //         withCredentials([usernamePassword(
+            //             credentialsId: 'nexus-creds',
+            //             usernameVariable: 'NEXUS_USER',
+            //             passwordVariable: 'NEXUS_PASSWORD'
+            //         )]) {
+            //             sh '''
+            //             echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
+            //             docker tag my-nexus-repo/expense-backend:latest 192.168.56.30:8082/expense-backend:latest
+            //             docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30:8082/expense-frontend:latest
+            //             docker push 192.168.56.30:8082/expense-backend:latest
+            //             docker push 192.168.56.30:8082/expense-frontend:latest
+            //             '''
+            //         }
+            //     }
+            // }
+
+            stage('Security Scan') {
+                agent { label 'securite' }
+                steps {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'nexus-creds',
+                        usernameVariable: 'NEXUS_USER',
+                        passwordVariable: 'NEXUS_PASSWORD'
+                    )]) {
+                        sh '''
+                        echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
+                        docker pull 192.168.56.30:8082/expense-backend:latest
+                        docker pull 192.168.56.30:8082/expense-frontend:latest
+                        docker run --rm \
+                          -v /var/run/docker.sock:/var/run/docker.sock \
+                          -v /mnt/nfs/trivy-results:/results \
+                          aquasec/trivy image \
+                          --exit-code 1 --severity HIGH,CRITICAL \
+                          --format json \
+                          --output /results/expense-backend.json \
+                          192.168.56.30:8082/expense-backend:latest
+                        docker run --rm \
+                          -v /var/run/docker.sock:/var/run/docker.sock \
+                          -v /mnt/nfs/trivy-results:/results \
+                          aquasec/trivy image \
+                          --exit-code 1 --severity HIGH,CRITICAL \
+                          --format json \
+                          --output /results/expense-frontend.json \
+                          192.168.56.30:8082/expense-frontend:latest
+                        '''
+                    }
                 }
             }
-        }
 
 //         stage('Stop Security VM') {
 //             steps {
@@ -145,6 +177,7 @@ pipeline {
 //                 '''
 //             }
 //         }
+    
     }
 
     post {
