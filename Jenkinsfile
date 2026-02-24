@@ -17,184 +17,184 @@ pipeline {
             }
         }
 
-        // stage('Build') {
-        //     parallel {
-        //         stage('Java') {
-        //             steps {
-        //                 dir('expense-tracker-service') {
-        //                     sh 'mvn clean install'
-        //                 }
-        //             }
-        //         }
-        //         stage('Angular') {
-        //             steps {
-        //                 dir('expense-tracker-ui') {
-        //                     sh 'npm install'
-        //                     sh './node_modules/.bin/ng build --configuration production'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Build') {
+            parallel {
+                stage('Java') {
+                    steps {
+                        dir('expense-tracker-service') {
+                            sh 'mvn clean install'
+                        }
+                    }
+                }
+                stage('Angular') {
+                    steps {
+                        dir('expense-tracker-ui') {
+                            sh 'npm install'
+                            sh './node_modules/.bin/ng build --configuration production'
+                        }
+                    }
+                }
+            }
+        }
 
-        // stage('Test') {
-        //     steps {
-        //         dir('expense-tracker-service') {
-        //             sh 'mvn test'
-        //         }
-        //     }
-        // }
+        stage('Test') {
+            steps {
+                dir('expense-tracker-service') {
+                    sh 'mvn test'
+                }
+            }
+        }
 
-        // stage('Start Security VM') {
-        //     steps {
-        //         sh '''
-        //             set -x
-        //             ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
-        //             STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-        //             if echo "$STATE" | grep -q poweroff; then
-        //                 echo "Starting Security VM"
-        //                 VBoxManage startvm securite --type headless
-        //                 sleep 15
-        //             else
-        //                 echo "Security VM already running"
-        //             fi
-        //             '
-        //         '''
-        //     }
-        // }
+        stage('Start Security VM') {
+            steps {
+                sh '''
+                    set -x
+                    ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
+                    STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+                    if echo "$STATE" | grep -q poweroff; then
+                        echo "Starting Security VM"
+                        VBoxManage startvm securite --type headless
+                        sleep 15
+                    else
+                        echo "Security VM already running"
+                    fi
+                    '
+                '''
+            }
+        }
 
-        // stage('Wait for VM') {
-        //     steps {
-        //         echo 'Waiting 60 seconds for Security VM to boot...'
-        //         sleep(time: 60, unit: 'SECONDS')
-        //     }
-        // }
+        stage('Wait for VM') {
+            steps {
+                echo 'Waiting 60 seconds for Security VM to boot...'
+                sleep(time: 60, unit: 'SECONDS')
+            }
+        }
 
-        // stage('Sonar Analysis') {
-        //     steps {
-        //         dir('expense-tracker-service') {
-        //             withSonarQubeEnv('SonarQubeScanner') {
-        //                 sh 'mvn sonar:sonar'
-        //             }
-        //         }
-        //     }
-        //     post {
-        //         success {
-        //             script {
-        //                 timeout(time: 2, unit: 'MINUTES') {
-        //                     def qualityGate = waitForQualityGate()
-        //                     if (qualityGate.status != 'OK') {
-        //                         error "SonarQube Quality Gate failed: ${qualityGate.status}"
-        //                     } else {
-        //                         echo "SonarQube analysis passed."
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         failure {
-        //             echo "SonarQube analysis failed during execution."
-        //         }
-        //     }
-        // }
+        stage('Sonar Analysis') {
+            steps {
+                dir('expense-tracker-service') {
+                    withSonarQubeEnv('SonarQubeScanner') {
+                        sh 'mvn sonar:sonar'
+                    }
+                }
+            }
+            post {
+                success {
+                    script {
+                        timeout(time: 2, unit: 'MINUTES') {
+                            def qualityGate = waitForQualityGate()
+                            if (qualityGate.status != 'OK') {
+                                error "SonarQube Quality Gate failed: ${qualityGate.status}"
+                            } else {
+                                echo "SonarQube analysis passed."
+                            }
+                        }
+                    }
+                }
+                failure {
+                    echo "SonarQube analysis failed during execution."
+                }
+            }
+        }
 
-        // stage('Build and Push Docker Images to Nexus') {
-        //     agent { label 'Security' }
-        //     steps {
-        //         git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'nexus-creds',
-        //             usernameVariable: 'NEXUS_USER',
-        //             passwordVariable: 'NEXUS_PASSWORD'
-        //         )]) {
-        //             sh '''
-        //                 set -x
-        //                 IMAGE_TAG=${BUILD_NUMBER}
-        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
-        //                 docker build -t my-nexus-repo/expense-backend:${IMAGE_TAG} -t my-nexus-repo/expense-backend:latest expense-tracker-service
-        //                 docker build -t my-nexus-repo/expense-frontend:${IMAGE_TAG} -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
-        //                 docker tag my-nexus-repo/expense-backend:${IMAGE_TAG} 192.168.56.30/expense-backend:${IMAGE_TAG}
-        //                 docker tag my-nexus-repo/expense-frontend:${IMAGE_TAG} 192.168.56.30/expense-frontend:${IMAGE_TAG}
-        //                 docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
-        //                 docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
-        //                 docker push 192.168.56.30/expense-backend:${IMAGE_TAG}
-        //                 docker push 192.168.56.30/expense-frontend:${IMAGE_TAG}
-        //                 docker push 192.168.56.30/expense-backend:latest
-        //                 docker push 192.168.56.30/expense-frontend:latest
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Build and Push Docker Images to Nexus') {
+            agent { label 'Security' }
+            steps {
+                git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh '''
+                        set -x
+                        IMAGE_TAG=${BUILD_NUMBER}
+                        echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+                        docker build -t my-nexus-repo/expense-backend:${IMAGE_TAG} -t my-nexus-repo/expense-backend:latest expense-tracker-service
+                        docker build -t my-nexus-repo/expense-frontend:${IMAGE_TAG} -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
+                        docker tag my-nexus-repo/expense-backend:${IMAGE_TAG} 192.168.56.30/expense-backend:${IMAGE_TAG}
+                        docker tag my-nexus-repo/expense-frontend:${IMAGE_TAG} 192.168.56.30/expense-frontend:${IMAGE_TAG}
+                        docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
+                        docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
+                        docker push 192.168.56.30/expense-backend:${IMAGE_TAG}
+                        docker push 192.168.56.30/expense-frontend:${IMAGE_TAG}
+                        docker push 192.168.56.30/expense-backend:latest
+                        docker push 192.168.56.30/expense-frontend:latest
+                    '''
+                }
+            }
+        }
 
-        // stage('Security Scan') {
-        //     agent { label 'Security' }
-        //     steps {
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'nexus-creds',
-        //             usernameVariable: 'NEXUS_USER',
-        //             passwordVariable: 'NEXUS_PASSWORD'
-        //         )]) {
-        //             sh '''
-        //                 set -x
-        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
-        //                 docker pull 192.168.56.30/expense-backend:latest
-        //                 docker pull 192.168.56.30/expense-frontend:latest
-        //                 docker run --rm \
-        //                     -v /var/run/docker.sock:/var/run/docker.sock \
-        //                     -v /opt/trivy-cache:/root/.cache/trivy \
-        //                     -v /mnt/nfs/trivy-results:/results \
-        //                     aquasec/trivy image \
-        //                     --severity HIGH,CRITICAL \
-        //                     --format json \
-        //                     --output /results/expense-backend.json \
-        //                     192.168.56.30/expense-backend:latest
-        //                 docker run --rm \
-        //                     -v /var/run/docker.sock:/var/run/docker.sock \
-        //                     -v /opt/trivy-cache:/root/.cache/trivy \
-        //                     -v /mnt/nfs/trivy-results:/results \
-        //                     aquasec/trivy image \
-        //                     --severity HIGH,CRITICAL \
-        //                     --format json \
-        //                     --output /results/expense-frontend.json \
-        //                     192.168.56.30/expense-frontend:latest
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Security Scan') {
+            agent { label 'Security' }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh '''
+                        set -x
+                        echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+                        docker pull 192.168.56.30/expense-backend:latest
+                        docker pull 192.168.56.30/expense-frontend:latest
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v /opt/trivy-cache:/root/.cache/trivy \
+                            -v /mnt/nfs/trivy-results:/results \
+                            aquasec/trivy image \
+                            --severity HIGH,CRITICAL \
+                            --format json \
+                            --output /results/expense-backend.json \
+                            192.168.56.30/expense-backend:latest
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v /opt/trivy-cache:/root/.cache/trivy \
+                            -v /mnt/nfs/trivy-results:/results \
+                            aquasec/trivy image \
+                            --severity HIGH,CRITICAL \
+                            --format json \
+                            --output /results/expense-frontend.json \
+                            192.168.56.30/expense-frontend:latest
+                    '''
+                }
+            }
+        }
 
-        // stage('Deploy to Kubernetes') {
-        //     agent { label 'k8s-agent' }
-        //     steps {
-        //         git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'nexus-creds',
-        //             usernameVariable: 'NEXUS_USER',
-        //             passwordVariable: 'NEXUS_PASSWORD'
-        //         )]) {
-        //             dir('k8s') {
-        //                 sh '''
-        //                     set -x
-        //                     IMAGE_TAG=${BUILD_NUMBER}
-        //                     kubectl apply -f namespace.yaml
-        //                     kubectl -n expense-tracker create secret docker-registry nexus-regcred \
-        //                         --docker-server=192.168.56.30 \
-        //                         --docker-username=$NEXUS_USER \
-        //                         --docker-password=$NEXUS_PASSWORD \
-        //                         --docker-email=devnull@example.com \
-        //                         --dry-run=client -o yaml | kubectl apply -f -
-        //                     kubectl apply -f backend-deployment.yaml
-        //                     kubectl apply -f backend-service.yaml
-        //                     kubectl apply -f frontend-deployment.yaml
-        //                     kubectl apply -f frontend-service.yaml
+        stage('Deploy to Kubernetes') {
+            agent { label 'k8s-agent' }
+            steps {
+                git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    dir('k8s') {
+                        sh '''
+                            set -x
+                            IMAGE_TAG=${BUILD_NUMBER}
+                            kubectl apply -f namespace.yaml
+                            kubectl -n expense-tracker create secret docker-registry nexus-regcred \
+                                --docker-server=192.168.56.30 \
+                                --docker-username=$NEXUS_USER \
+                                --docker-password=$NEXUS_PASSWORD \
+                                --docker-email=devnull@example.com \
+                                --dry-run=client -o yaml | kubectl apply -f -
+                            kubectl apply -f backend-deployment.yaml
+                            kubectl apply -f backend-service.yaml
+                            kubectl apply -f frontend-deployment.yaml
+                            kubectl apply -f frontend-service.yaml
 
-        //                     kubectl -n expense-tracker set image deployment/expense-backend expense-backend=192.168.56.30/expense-backend:${IMAGE_TAG}
-        //                     kubectl -n expense-tracker set image deployment/expense-frontend expense-frontend=192.168.56.30/expense-frontend:${IMAGE_TAG}
-        //                     kubectl -n expense-tracker rollout status deployment/expense-backend --timeout=180s
-        //                     kubectl -n expense-tracker rollout status deployment/expense-frontend --timeout=180s
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
+                            kubectl -n expense-tracker set image deployment/expense-backend expense-backend=192.168.56.30/expense-backend:${IMAGE_TAG}
+                            kubectl -n expense-tracker set image deployment/expense-frontend expense-frontend=192.168.56.30/expense-frontend:${IMAGE_TAG}
+                            kubectl -n expense-tracker rollout status deployment/expense-backend --timeout=180s
+                            kubectl -n expense-tracker rollout status deployment/expense-frontend --timeout=180s
+                        '''
+                    }
+                }
+            }
+        }
 
         stage('OWASP ZAP Full Scan') {
             agent { label 'Security' }
