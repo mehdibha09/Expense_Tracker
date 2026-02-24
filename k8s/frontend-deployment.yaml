@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expense-frontend
+  namespace: expense-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: expense-frontend
+  template:
+    metadata:
+      labels:
+        app: expense-frontend
+    spec:
+      containers:
+        - name: expense-frontend
+          image: 192.168.56.30:8082/expense-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80

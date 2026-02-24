@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expense-backend
+  namespace: expense-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: expense-backend
+  template:
+    metadata:
+      labels:
+        app: expense-backend
+    spec:
+      containers:
+        - name: expense-backend
+          image: 192.168.56.30:8082/expense-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9876
+          env:
+            - name: FRONTEND_ORIGIN
+              value: 'http://NODE_IP:30080'
