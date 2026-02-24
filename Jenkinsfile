@@ -165,6 +165,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             agent { label 'k8s-agent' }
             steps {
+                git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
                 withCredentials([usernamePassword(
                     credentialsId: 'nexus-creds',
                     usernameVariable: 'NEXUS_USER',
