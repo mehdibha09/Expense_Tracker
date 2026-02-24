@@ -108,11 +108,16 @@ pipeline {
                 )]) {
                     sh '''
                         set -x
+                        IMAGE_TAG=${BUILD_NUMBER}
                         echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
-                        docker build -t my-nexus-repo/expense-backend:latest expense-tracker-service
-                        docker build -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
+                        docker build -t my-nexus-repo/expense-backend:${IMAGE_TAG} -t my-nexus-repo/expense-backend:latest expense-tracker-service
+                        docker build -t my-nexus-repo/expense-frontend:${IMAGE_TAG} -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
+                        docker tag my-nexus-repo/expense-backend:${IMAGE_TAG} 192.168.56.30/expense-backend:${IMAGE_TAG}
+                        docker tag my-nexus-repo/expense-frontend:${IMAGE_TAG} 192.168.56.30/expense-frontend:${IMAGE_TAG}
                         docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
                         docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
+                        docker push 192.168.56.30/expense-backend:${IMAGE_TAG}
+                        docker push 192.168.56.30/expense-frontend:${IMAGE_TAG}
                         docker push 192.168.56.30/expense-backend:latest
                         docker push 192.168.56.30/expense-frontend:latest
                     '''
@@ -168,6 +173,7 @@ pipeline {
                     dir('k8s') {
                         sh '''
                             set -x
+                            IMAGE_TAG=${BUILD_NUMBER}
                             kubectl apply -f namespace.yaml
                             kubectl -n expense-tracker create secret docker-registry nexus-regcred \
                                 --docker-server=192.168.56.30 \
@@ -179,6 +185,11 @@ pipeline {
                             kubectl apply -f backend-service.yaml
                             kubectl apply -f frontend-deployment.yaml
                             kubectl apply -f frontend-service.yaml
+
+                            kubectl -n expense-tracker set image deployment/expense-backend expense-backend=192.168.56.30/expense-backend:${IMAGE_TAG}
+                            kubectl -n expense-tracker set image deployment/expense-frontend expense-frontend=192.168.56.30/expense-frontend:${IMAGE_TAG}
+                            kubectl -n expense-tracker rollout status deployment/expense-backend --timeout=180s
+                            kubectl -n expense-tracker rollout status deployment/expense-frontend --timeout=180s
                         '''
                     }
                 }
