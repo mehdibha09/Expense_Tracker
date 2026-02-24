@@ -174,7 +174,7 @@ pipeline {
                         usernameVariable: 'NEXUS_USER',
                         passwordVariable: 'NEXUS_PASSWORD'
                     )]) 
-                    dir("${WORKSPACE}") {
+                    dir("k8s") {
     sh '''
         set -x
         kubectl apply -f k8s/namespace.yaml
@@ -184,10 +184,10 @@ pipeline {
           --docker-password=$NEXUS_PASSWORD \
           --docker-email=devnull@example.com \
           --dry-run=client -o yaml | kubectl apply -f -
-        kubectl apply -f k8s/backend-deployment.yaml
-        kubectl apply -f k8s/backend-service.yaml
-        kubectl apply -f k8s/frontend-deployment.yaml
-        kubectl apply -f k8s/frontend-service.yaml
+        kubectl apply -f backend-deployment.yaml
+        kubectl apply -f backend-service.yaml
+        kubectl apply -f frontend-deployment.yaml
+        kubectl apply -f frontend-service.yaml
     '''
 }
                 }
