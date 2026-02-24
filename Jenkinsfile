@@ -129,52 +129,65 @@ pipeline {
             //     }
             // }
 
-            stage('Security Scan') {
-                agent { label 'Security' }
+            // stage('Security Scan') {
+            //     agent { label 'Security' }
+            //     steps {
+            //         withCredentials([usernamePassword(
+            //             credentialsId: 'nexus-creds',
+            //             usernameVariable: 'NEXUS_USER',
+            //             passwordVariable: 'NEXUS_PASSWORD'
+            //         )]) {
+            //             //--exit-code 1 --severity HIGH,CRITICAL \
+            //       sh '''
+            //             set -x
+            //             echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
+            //             docker pull 192.168.56.30:8082/expense-backend:latest
+            //             docker pull 192.168.56.30:8082/expense-frontend:latest
+            //             docker run --rm \
+            //             -v /var/run/docker.sock:/var/run/docker.sock \
+            //             -v /opt/trivy-cache:/root/.cache/trivy \
+            //             -v /mnt/nfs/trivy-results:/results \
+            //             aquasec/trivy image \
+            //             --severity HIGH,CRITICAL \
+            //             --format json \
+            //             --output /results/expense-backend.json \
+            //             192.168.56.30:8082/expense-backend:latest
+            //             docker run --rm \
+            //             -v /var/run/docker.sock:/var/run/docker.sock \
+            //             -v /opt/trivy-cache:/root/.cache/trivy \
+            //             -v /mnt/nfs/trivy-results:/results \
+            //             aquasec/trivy image \
+            //             --severity HIGH,CRITICAL \
+            //             --format json \
+            //             --output /results/expense-frontend.json \
+            //             192.168.56.30:8082/expense-frontend:latest
+            //             '''
+            //         }
+            //     }
+            // }
+
+            stage('Deploy to Kubernetes') {
                 steps {
                     withCredentials([usernamePassword(
                         credentialsId: 'nexus-creds',
                         usernameVariable: 'NEXUS_USER',
                         passwordVariable: 'NEXUS_PASSWORD'
                     )]) {
-                        //--exit-code 1 --severity HIGH,CRITICAL \
-                  sh '''
-                        set -x
-                        echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
-                        docker pull 192.168.56.30:8082/expense-backend:latest
-                        docker pull 192.168.56.30:8082/expense-frontend:latest
-                        docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        -v /opt/trivy-cache:/root/.cache/trivy \
-                        -v /mnt/nfs/trivy-results:/results \
-                        aquasec/trivy image \
-                        --severity HIGH,CRITICAL \
-                        --format json \
-                        --output /results/expense-backend.json \
-                        192.168.56.30:8082/expense-backend:latest
-                        docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        -v /opt/trivy-cache:/root/.cache/trivy \
-                        -v /mnt/nfs/trivy-results:/results \
-                        aquasec/trivy image \
-                        --severity HIGH,CRITICAL \
-                        --format json \
-                        --output /results/expense-frontend.json \
-                        192.168.56.30:8082/expense-frontend:latest
+                        sh '''
+                            set -x
+                            kubectl apply -f k8s/namespace.yaml
+                            kubectl -n expense-tracker create secret docker-registry nexus-regcred \
+                              --docker-server=192.168.56.30:8082 \
+                              --docker-username=$NEXUS_USER \
+                              --docker-password=$NEXUS_PASSWORD \
+                              --docker-email=devnull@example.com \
+                              --dry-run=client -o yaml | kubectl apply -f -
+                            kubectl apply -f k8s/backend-deployment.yaml
+                            kubectl apply -f k8s/backend-service.yaml
+                            kubectl apply -f k8s/frontend-deployment.yaml
+                            kubectl apply -f k8s/frontend-service.yaml
                         '''
                     }
-                }
-            }
-
-            stage('Deploy to Kubernetes') {
-                steps {
-                    sh '''
-                        kubectl apply -f k8s/namespace.yaml
-                        kubectl apply -f k8s/backend-deployment.yaml
-                        kubectl apply -f k8s/backend-service.yaml
-                        kubectl apply -f k8s/frontend-deployment.yaml
-                        kubectl apply -f k8s/frontend-service.yaml
-                    '''
                 }
             }
 

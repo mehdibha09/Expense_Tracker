@@ -13,6 +13,8 @@ spec:
       labels:
         app: expense-backend
     spec:
+      imagePullSecrets:
+        - name: nexus-regcred
       containers:
         - name: expense-backend
           image: 192.168.56.30:8082/expense-backend:latest
