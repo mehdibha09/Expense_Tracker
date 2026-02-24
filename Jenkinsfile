@@ -173,22 +173,23 @@ pipeline {
                         credentialsId: 'nexus-creds',
                         usernameVariable: 'NEXUS_USER',
                         passwordVariable: 'NEXUS_PASSWORD'
-                    )]) {
-                        sh '''
-                            set -x
-                            kubectl apply -f k8s/namespace.yaml
-                            kubectl -n expense-tracker create secret docker-registry nexus-regcred \
-                              --docker-server=192.168.56.30:8082 \
-                              --docker-username=$NEXUS_USER \
-                              --docker-password=$NEXUS_PASSWORD \
-                              --docker-email=devnull@example.com \
-                              --dry-run=client -o yaml | kubectl apply -f -
-                            kubectl apply -f k8s/backend-deployment.yaml
-                            kubectl apply -f k8s/backend-service.yaml
-                            kubectl apply -f k8s/frontend-deployment.yaml
-                            kubectl apply -f k8s/frontend-service.yaml
-                        '''
-                    }
+                    )]) 
+                    dir("${WORKSPACE}") {
+    sh '''
+        set -x
+        kubectl apply -f k8s/namespace.yaml
+        kubectl -n expense-tracker create secret docker-registry nexus-regcred \
+          --docker-server=192.168.56.30:8082 \
+          --docker-username=$NEXUS_USER \
+          --docker-password=$NEXUS_PASSWORD \
+          --docker-email=devnull@example.com \
+          --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f k8s/backend-deployment.yaml
+        kubectl apply -f k8s/backend-service.yaml
+        kubectl apply -f k8s/frontend-deployment.yaml
+        kubectl apply -f k8s/frontend-service.yaml
+    '''
+}
                 }
             }
 
