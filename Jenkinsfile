@@ -167,7 +167,7 @@ pipeline {
             // }
 
             stage('Deploy to Kubernetes') {
-                {agent { label 'k8s-agent' }}
+                agent { label 'k8s-agent' }
                 steps {
                     withCredentials([usernamePassword(
                         credentialsId: 'nexus-creds',
