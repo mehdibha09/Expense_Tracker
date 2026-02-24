@@ -97,19 +97,10 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build and Push Docker Images to Nexus') {
+            agent { label 'Security' }
             steps {
-                dir('expense-tracker-service') {
-                    sh 'docker build -t my-nexus-repo/expense-backend:latest .'
-                }
-                dir('expense-tracker-ui') {
-                    sh 'docker build -t my-nexus-repo/expense-frontend:latest .'
-                }
-            }
-        }
-
-        stage('Push Docker Images to Nexus') {
-            steps {
+                git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
                 withCredentials([usernamePassword(
                     credentialsId: 'nexus-creds',
                     usernameVariable: 'NEXUS_USER',
@@ -118,6 +109,8 @@ pipeline {
                     sh '''
                         set -x
                         echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+                        docker build -t my-nexus-repo/expense-backend:latest expense-tracker-service
+                        docker build -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
                         docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
                         docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
                         docker push 192.168.56.30/expense-backend:latest
