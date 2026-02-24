@@ -17,7 +17,7 @@ spec:
         - name: nexus-regcred
       containers:
         - name: expense-frontend
-          image: 192.168.56.30:8082/expense-frontend:latest
+          image: 192.168.56.30/expense-frontend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

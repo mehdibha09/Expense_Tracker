@@ -116,11 +116,11 @@ pipeline {
         //         )]) {
         //             sh '''
         //                 set -x
-        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
-        //                 docker tag my-nexus-repo/expense-backend:latest 192.168.56.30:8082/expense-backend:latest
-        //                 docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30:8082/expense-frontend:latest
-        //                 docker push 192.168.56.30:8082/expense-backend:latest
-        //                 docker push 192.168.56.30:8082/expense-frontend:latest
+        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+        //                 docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
+        //                 docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
+        //                 docker push 192.168.56.30/expense-backend:latest
+        //                 docker push 192.168.56.30/expense-frontend:latest
         //             '''
         //         }
         //     }
@@ -136,9 +136,9 @@ pipeline {
         //         )]) {
         //             sh '''
         //                 set -x
-        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30:8082 -u $NEXUS_USER --password-stdin
-        //                 docker pull 192.168.56.30:8082/expense-backend:latest
-        //                 docker pull 192.168.56.30:8082/expense-frontend:latest
+        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+        //                 docker pull 192.168.56.30/expense-backend:latest
+        //                 docker pull 192.168.56.30/expense-frontend:latest
         //                 docker run --rm \
         //                     -v /var/run/docker.sock:/var/run/docker.sock \
         //                     -v /opt/trivy-cache:/root/.cache/trivy \
@@ -147,7 +147,7 @@ pipeline {
         //                     --severity HIGH,CRITICAL \
         //                     --format json \
         //                     --output /results/expense-backend.json \
-        //                     192.168.56.30:8082/expense-backend:latest
+        //                     192.168.56.30/expense-backend:latest
         //                 docker run --rm \
         //                     -v /var/run/docker.sock:/var/run/docker.sock \
         //                     -v /opt/trivy-cache:/root/.cache/trivy \
@@ -156,7 +156,7 @@ pipeline {
         //                     --severity HIGH,CRITICAL \
         //                     --format json \
         //                     --output /results/expense-frontend.json \
-        //                     192.168.56.30:8082/expense-frontend:latest
+        //                     192.168.56.30/expense-frontend:latest
         //             '''
         //         }
         //     }
@@ -176,7 +176,7 @@ pipeline {
                             set -x
                             kubectl apply -f namespace.yaml
                             kubectl -n expense-tracker create secret docker-registry nexus-regcred \
-                                --docker-server=192.168.56.30:8082 \
+                                --docker-server=192.168.56.30 \
                                 --docker-username=$NEXUS_USER \
                                 --docker-password=$NEXUS_PASSWORD \
                                 --docker-email=devnull@example.com \
