@@ -48,16 +48,17 @@ pipeline {
         stage('Start Security VM') {
             steps {
                 sh '''
-                    ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+                    set -x
+                    ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
                     STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-                    if echo $STATE | grep -q poweroff; then
+                    if echo "$STATE" | grep -q poweroff; then
                         echo "Starting Security VM"
                         VBoxManage startvm securite --type headless
                         sleep 15
                     else
                         echo "Security VM already running"
                     fi
-                    EOF
+                    '
                 '''
             }
         }
@@ -194,15 +195,15 @@ pipeline {
         stage('Stop Security VM') {
             steps {
                 sh '''
-                    ssh -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 << 'EOF'
+                    ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
                     STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-                    if echo $STATE | grep -q running; then
-                        echo 'Stopping Security VM'
+                    if echo "$STATE" | grep -q running; then
+                        echo "Stopping Security VM"
                         VBoxManage controlvm securite acpipowerbutton
                     else
-                        echo 'Security VM already stopped'
+                        echo "Security VM already stopped"
                     fi
-                    EOF
+                    '
                 '''
             }
         }
