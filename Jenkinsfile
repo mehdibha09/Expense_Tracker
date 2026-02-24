@@ -177,7 +177,7 @@ pipeline {
                     dir("k8s") {
     sh '''
         set -x
-        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f namespace.yaml
         kubectl -n expense-tracker create secret docker-registry nexus-regcred \
           --docker-server=192.168.56.30:8082 \
           --docker-username=$NEXUS_USER \
