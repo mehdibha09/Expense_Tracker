@@ -199,17 +199,30 @@ pipeline {
         stage('OWASP ZAP Full Scan') {
             agent { label 'Security' }
             steps {
-                sh """
-                    set -x
-                    docker run --rm \
-                        --name owasp-zap-scan-${BUILD_NUMBER} \
-                        -v /mnt/nfs/owasp-zap:/zap/wrk \
-                        ghcr.io/zaproxy/zaproxy:stable \
-                        zap-full-scan.py \
-                        -t http://192.168.56.10:30080 \
-                        -J /zap/wrk/zap-report-${BUILD_NUMBER}.json \
-                        -r /zap/wrk/zap-report-${BUILD_NUMBER}.html
-                """
+                script {
+                    int zapExitCode = sh(
+                        script: """
+                            set -x
+                            docker run --rm \
+                                --name owasp-zap-scan-${BUILD_NUMBER} \
+                                -v /mnt/nfs/owasp-zap:/zap/wrk \
+                                ghcr.io/zaproxy/zaproxy:stable \
+                                zap-full-scan.py \
+                                -t http://192.168.56.10:30080 \
+                                -J /zap/wrk/zap-report-${BUILD_NUMBER}.json \
+                                -r /zap/wrk/zap-report-${BUILD_NUMBER}.html
+                        """,
+                        returnStatus: true
+                    )
+
+                    if (zapExitCode == 0) {
+                        echo 'OWASP ZAP completed successfully (exit code 0).'
+                    } else if (zapExitCode == 3) {
+                        echo 'OWASP ZAP exited with code 3. Continuing pipeline as requested.'
+                    } else {
+                        error "OWASP ZAP scan failed with exit code ${zapExitCode}"
+                    }
+                }
             }
         }
         

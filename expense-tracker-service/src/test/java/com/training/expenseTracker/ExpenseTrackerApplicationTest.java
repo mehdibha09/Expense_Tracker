@@ -1,25 +1,26 @@
 package com.training.expenseTracker;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest(properties = {"frontend.origin=http://example.com"})
+@SpringBootTest(properties = {
+		"spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+		"spring.datasource.driver-class-name=org.h2.Driver",
+		"spring.datasource.username=sa",
+		"spring.datasource.password=",
+		"spring.jpa.hibernate.ddl-auto=create-drop",
+		"spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
+})
 public class ExpenseTrackerApplicationTest {
 
-	@Value("${frontend.origin}")
-	private String frontendOrigin;
-
-	private final ApplicationContext context;
-
-	public ExpenseTrackerApplicationTest(ApplicationContext context) {
-		this.context = context;
-	}
+	@Autowired
+	private ApplicationContext context;
 
 	@Test
 	public void contextLoads() {
