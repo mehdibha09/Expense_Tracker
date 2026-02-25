@@ -23,7 +23,7 @@ spec:
             - containerPort: 9876
           env:
             - name: FRONTEND_ORIGIN
-              value: 'http://NODE_IP:30080'
+              value: 'http://expense-backend:9876'
             - name: SPRING_DATASOURCE_URL
               value: jdbc:postgresql://postgres-service.postgres.svc.cluster.local:5432/mydb
             - name: SPRING_DATASOURCE_USERNAME
