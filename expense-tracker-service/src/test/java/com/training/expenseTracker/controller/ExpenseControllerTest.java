@@ -1,23 +1,32 @@
 package com.training.expenseTracker.controller;
 
-import com.training.expenseTracker.model.Expense;
-import com.training.expenseTracker.service.ExpenseService;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.sql.Connection;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.training.expenseTracker.model.Expense;
+import com.training.expenseTracker.service.ExpenseService;
 
 public class ExpenseControllerTest {
 
@@ -25,6 +34,12 @@ public class ExpenseControllerTest {
 
     @Mock
     private ExpenseService expenseService;
+
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private Connection connection;
 
     @InjectMocks
     private ExpenseController expenseController;
@@ -71,5 +86,15 @@ public class ExpenseControllerTest {
                 .andExpect(content().string("Expense deleted successfully"));
 
         verify(expenseService, times(1)).deleteExpenseById(expense.getId());
+    }
+
+    @Test
+    void testGetDatabaseStatus() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.isClosed()).thenReturn(false);
+
+        mockMvc.perform(get("/api/v1/expense/db-status"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Connected to PostgreSQL pod: postgres-0"));
     }
 }

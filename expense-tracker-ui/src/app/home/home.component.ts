@@ -1,66 +1,87 @@
-import {Component, OnInit} from '@angular/core';
-import {Expense} from "../shared/models/expense.model";
-import {ExpenseService} from "../services/expense.service";
+import { Component, OnInit } from '@angular/core';
+import { environment } from '../../environments/environment';
+import { ExpenseService } from '../services/expense.service';
+import { Expense } from '../shared/models/expense.model';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
+  styleUrl: './home.component.css',
 })
-export class HomeComponent implements OnInit{
+export class HomeComponent implements OnInit {
   expenses: Expense[] = [];
-  categories: string[] = ['Food', 'Entertainment', 'Transport', 'Utilities', 'Health', 'Others'];
+  categories: string[] = [
+    'Food',
+    'Entertainment',
+    'Transport',
+    'Utilities',
+    'Health',
+    'Others',
+  ];
+  dbConnectionMessage = '';
 
   newExpense: Expense = {
     title: '',
     amount: 0,
-    category: ''
+    category: '',
   };
 
-  constructor(private expenseService : ExpenseService) {
-  }
+  constructor(private expenseService: ExpenseService) {}
 
   ngOnInit() {
     this.fetchExpenses();
+    if (environment.production) {
+      this.fetchDbStatus();
+    }
   }
 
-  fetchExpenses() : void{
+  fetchDbStatus(): void {
+    this.expenseService.getDbStatus().subscribe({
+      next: (message) => {
+        this.dbConnectionMessage = message;
+      },
+      error: () => {
+        this.dbConnectionMessage = '';
+      },
+    });
+  }
+
+  fetchExpenses(): void {
     this.expenseService.getExpense().subscribe({
-      next : (data) => {
+      next: (data) => {
         this.expenses = data;
       },
-      error : (err) => {
-        console.log("Data not loading");
-      }
-    })
+      error: (err) => {
+        console.log('Data not loading');
+      },
+    });
   }
 
-  addExpense() : void {
+  addExpense(): void {
     this.expenseService.addExpense(this.newExpense).subscribe({
-      next : (addedExpense) => {
+      next: (addedExpense) => {
         this.expenses.push(addedExpense);
         this.newExpense = { title: '', amount: 0, category: '' };
         this.fetchExpenses();
       },
-      error : (err) => {
-        console.log("Failed to add expense");
-      }
-    })
+      error: (err) => {
+        console.log('Failed to add expense');
+      },
+    });
   }
 
   deleteExpense(index: number) {
     const expenseToBeDeleted = this.expenses[index];
-    if(expenseToBeDeleted && expenseToBeDeleted.id) {
+    if (expenseToBeDeleted && expenseToBeDeleted.id) {
       this.expenseService.deleteExpense(expenseToBeDeleted.id).subscribe({
-        next : (res) => {
+        next: (res) => {
           console.log(res);
-          this.expenses.splice(index,1);
+          this.expenses.splice(index, 1);
         },
-        error : (err) => {
-          console.log('Error deleting expense:',err);
-        }
-      })
+        error: (err) => {
+          console.log('Error deleting expense:', err);
+        },
+      });
     }
   }
-
 }

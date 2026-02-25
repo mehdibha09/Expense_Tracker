@@ -1,15 +1,28 @@
 package com.training.expenseTracker.controller;
 
-import com.training.expenseTracker.model.Expense;
-import com.training.expenseTracker.model.User;
-import com.training.expenseTracker.service.ExpenseService;
-import jakarta.annotation.PostConstruct;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.training.expenseTracker.model.Expense;
+import com.training.expenseTracker.service.ExpenseService;
+
+import jakarta.annotation.PostConstruct;
 
 @RestController
 @RequestMapping("/api/v1/expense")
@@ -17,6 +30,10 @@ import java.util.List;
 public class ExpenseController {
 
     @Autowired ExpenseService expenseService;
+    @Autowired(required = false) DataSource dataSource;
+
+    @Value("${db.pod.name:postgres-0}")
+    private String dbPodName = "postgres-0";
 
     @PostConstruct
     public void init() {
@@ -51,5 +68,22 @@ public class ExpenseController {
     public ResponseEntity<?> deleteExpenseById(@RequestParam Integer id) {
         expenseService.deleteExpenseById(id);
         return new ResponseEntity<>("Expense deleted successfully", HttpStatus.OK);
+    }
+
+    @GetMapping("/db-status")
+    public ResponseEntity<String> getDatabaseStatus() {
+        if (dataSource == null) {
+            return new ResponseEntity<>("Database connection not configured", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        try (Connection connection = dataSource.getConnection()) {
+            if (connection != null && !connection.isClosed()) {
+                return new ResponseEntity<>("Connected to PostgreSQL pod: " + dbPodName, HttpStatus.OK);
+            }
+        } catch (SQLException exception) {
+            return new ResponseEntity<>("Failed to connect to PostgreSQL", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        return new ResponseEntity<>("Failed to connect to PostgreSQL", HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
