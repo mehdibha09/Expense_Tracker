@@ -37,6 +37,10 @@ public class ExpenseController {
 
     @PostConstruct
     public void init() {
+        if (!expenseService.getAllExpense().isEmpty()) {
+            return;
+        }
+
         Expense expense1 = new Expense();
         expense1.setId(1);
         expense1.setTitle("lassi");
