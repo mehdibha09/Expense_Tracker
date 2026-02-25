@@ -97,33 +97,33 @@ pipeline {
         //     }
         // }
 
-        // stage('Build and Push Docker Images to Nexus') {
-        //     agent { label 'Security' }
-        //     steps {
-        //         git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'nexus-creds',
-        //             usernameVariable: 'NEXUS_USER',
-        //             passwordVariable: 'NEXUS_PASSWORD'
-        //         )]) {
-        //             sh '''
-        //                 set -x
-        //                 IMAGE_TAG=${BUILD_NUMBER}
-        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
-        //                 docker build -t my-nexus-repo/expense-backend:${IMAGE_TAG} -t my-nexus-repo/expense-backend:latest expense-tracker-service
-        //                 docker build -t my-nexus-repo/expense-frontend:${IMAGE_TAG} -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
-        //                 docker tag my-nexus-repo/expense-backend:${IMAGE_TAG} 192.168.56.30/expense-backend:${IMAGE_TAG}
-        //                 docker tag my-nexus-repo/expense-frontend:${IMAGE_TAG} 192.168.56.30/expense-frontend:${IMAGE_TAG}
-        //                 docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
-        //                 docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
-        //                 docker push 192.168.56.30/expense-backend:${IMAGE_TAG}
-        //                 docker push 192.168.56.30/expense-frontend:${IMAGE_TAG}
-        //                 docker push 192.168.56.30/expense-backend:latest
-        //                 docker push 192.168.56.30/expense-frontend:latest
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Build and Push Docker Images to Nexus') {
+            agent { label 'Security' }
+            steps {
+                git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh '''
+                        set -x
+                        IMAGE_TAG=${BUILD_NUMBER}
+                        echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+                        docker build -t my-nexus-repo/expense-backend:${IMAGE_TAG} -t my-nexus-repo/expense-backend:latest expense-tracker-service
+                        docker build -t my-nexus-repo/expense-frontend:${IMAGE_TAG} -t my-nexus-repo/expense-frontend:latest expense-tracker-ui
+                        docker tag my-nexus-repo/expense-backend:${IMAGE_TAG} 192.168.56.30/expense-backend:${IMAGE_TAG}
+                        docker tag my-nexus-repo/expense-frontend:${IMAGE_TAG} 192.168.56.30/expense-frontend:${IMAGE_TAG}
+                        docker tag my-nexus-repo/expense-backend:latest 192.168.56.30/expense-backend:latest
+                        docker tag my-nexus-repo/expense-frontend:latest 192.168.56.30/expense-frontend:latest
+                        docker push 192.168.56.30/expense-backend:${IMAGE_TAG}
+                        docker push 192.168.56.30/expense-frontend:${IMAGE_TAG}
+                        docker push 192.168.56.30/expense-backend:latest
+                        docker push 192.168.56.30/expense-frontend:latest
+                    '''
+                }
+            }
+        }
 
         // stage('Security Scan') {
         //     agent { label 'Security' }
