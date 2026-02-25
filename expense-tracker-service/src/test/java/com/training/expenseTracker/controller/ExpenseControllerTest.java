@@ -67,11 +67,14 @@ public class ExpenseControllerTest {
     @Test
     void testAddExpense() throws Exception {
         Expense newExpense = new Expense(2, "shirt", 2000.0, "Clothing");
+        when(expenseService.addExpense(newExpense)).thenReturn(newExpense);
 
         mockMvc.perform(post("/api/v1/expense/add")
                         .contentType("application/json")
                         .content("{\"id\":2, \"title\":\"shirt\", \"amount\":2000.0, \"category\":\"Clothing\"}"))
-                .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.title").value("shirt"))
+            .andExpect(jsonPath("$.amount").value(2000.0));
 
         verify(expenseService, times(1)).addExpense(newExpense);
     }
