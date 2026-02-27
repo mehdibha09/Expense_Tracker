@@ -45,23 +45,23 @@ pipeline {
             }
         }
 
-        // stage('Start Security VM') {
-        //     steps {
-        //         sh '''
-        //             set -x
-        //             ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
-        //             STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-        //             if echo "$STATE" | grep -q poweroff; then
-        //                 echo "Starting Security VM"
-        //                 VBoxManage startvm securite --type headless
-        //                 sleep 15
-        //             else
-        //                 echo "Security VM already running"
-        //             fi
-        //             '
-        //         '''
-        //     }
-        // }
+        stage('Start Security VM') {
+            steps {
+                sh '''
+                    set -x
+                    ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
+                    STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+                    if echo "$STATE" | grep -q poweroff; then
+                        echo "Starting Security VM"
+                        VBoxManage startvm securite --type headless
+                        sleep 15
+                    else
+                        echo "Security VM already running"
+                    fi
+                    '
+                '''
+            }
+        }
 
         // stage('Wait for VM') {
         //     steps {
@@ -98,6 +98,7 @@ pipeline {
         // }
 
         stage('Build and Push Docker Images to Nexus') {
+                agent { label 'Security' }
                 steps {
                 git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
                 withCredentials([usernamePassword(
@@ -124,41 +125,39 @@ pipeline {
             }
         }
 
-        // stage('Security Scan') {
-        //     agent { label 'Security' }
-        //     steps {
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'nexus-creds',
-        //             usernameVariable: 'NEXUS_USER',
-        //             passwordVariable: 'NEXUS_PASSWORD'
-        //         )]) {
-        //             sh '''
-        //                 set -x
-        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
-        //                 docker pull 192.168.56.30/expense-backend:latest
-        //                 docker pull 192.168.56.30/expense-frontend:latest
-        //                 docker run --rm \
-        //                     -v /var/run/docker.sock:/var/run/docker.sock \
-        //                     -v /opt/trivy-cache:/root/.cache/trivy \
-        //                     -v /mnt/nfs/trivy-results:/results \
-        //                     aquasec/trivy image \
-        //                     --severity HIGH,CRITICAL \
-        //                     --format json \
-        //                     --output /results/expense-backend.json \
-        //                     192.168.56.30/expense-backend:latest
-        //                 docker run --rm \
-        //                     -v /var/run/docker.sock:/var/run/docker.sock \
-        //                     -v /opt/trivy-cache:/root/.cache/trivy \
-        //                     -v /mnt/nfs/trivy-results:/results \
-        //                     aquasec/trivy image \
-        //                     --severity HIGH,CRITICAL \
-        //                     --format json \
-        //                     --output /results/expense-frontend.json \
-        //                     192.168.56.30/expense-frontend:latest
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Security Scan') {
+            agent { label 'Security' }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh '''
+                        set -x
+                        echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v /opt/trivy-cache:/root/.cache/trivy \
+                            -v /mnt/nfs/trivy-results:/results \
+                            aquasec/trivy image \
+                            --severity HIGH,CRITICAL \
+                            --format json \
+                            --output /results/expense-backend.json \
+                            192.168.56.30/expense-backend:latest
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v /opt/trivy-cache:/root/.cache/trivy \
+                            -v /mnt/nfs/trivy-results:/results \
+                            aquasec/trivy image \
+                            --severity HIGH,CRITICAL \
+                            --format json \
+                            --output /results/expense-frontend.json \
+                            192.168.56.30/expense-frontend:latest
+                    '''
+                }
+            }
+        }
 
         stage('Deploy to Kubernetes') {
             agent { label 'k8s-agent' }
