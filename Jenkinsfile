@@ -139,7 +139,7 @@ pipeline {
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v /opt/trivy-cache:/root/.cache/trivy \
-                            -v /mnt/nfs/trivy-results:/results \
+                            -v /mnt/nfs/trivy/results:/results \
                             aquasec/trivy image \
                             --severity HIGH,CRITICAL \
                             --format json \
@@ -148,14 +148,79 @@ pipeline {
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v /opt/trivy-cache:/root/.cache/trivy \
-                            -v /mnt/nfs/trivy-results:/results \
+                            -v /mnt/nfs/trivy/results:/results \
+                            aquasec/trivy image \
+                            --severity HIGH,CRITICAL \
+                            --format template \
+                            --template "@/contrib/html.tpl" \
+                            --output /results/expense-backend.html \
+                            192.168.56.30/expense-backend:latest
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v /opt/trivy-cache:/root/.cache/trivy \
+                            -v /mnt/nfs/trivy/results:/results \
                             aquasec/trivy image \
                             --severity HIGH,CRITICAL \
                             --format json \
                             --output /results/expense-frontend.json \
                             192.168.56.30/expense-frontend:latest
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v /opt/trivy-cache:/root/.cache/trivy \
+                            -v /mnt/nfs/trivy/results:/results \
+                            aquasec/trivy image \
+                            --severity HIGH,CRITICAL \
+                            --format template \
+                            --template "@/contrib/html.tpl" \
+                            --output /results/expense-frontend.html \
+                            192.168.56.30/expense-frontend:latest
                     '''
                 }
+            }
+        }
+
+        stage('Publish Security Reports') {
+            agent { label 'security' }
+            steps {
+                sh '''
+                    set -x
+                    mkdir -p reports/trivy reports/zap
+                    cp -f /mnt/nfs/trivy/results/expense-backend.json reports/trivy/ 2>/dev/null || true
+                    cp -f /mnt/nfs/trivy/results/expense-frontend.json reports/trivy/ 2>/dev/null || true
+                    cp -f /mnt/nfs/trivy/results/expense-backend.html reports/trivy/ 2>/dev/null || true
+                    cp -f /mnt/nfs/trivy/results/expense-frontend.html reports/trivy/ 2>/dev/null || true
+                    cp -f /mnt/nfs/owasp-zap/zap-report-${BUILD_NUMBER}.html reports/zap/ 2>/dev/null || true
+                    cp -f /mnt/nfs/owasp-zap/zap-report-${BUILD_NUMBER}.json reports/zap/ 2>/dev/null || true
+                '''
+
+                archiveArtifacts artifacts: 'reports/**/*.html, reports/**/*.json', allowEmptyArchive: true
+
+                publishHTML(target: [
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports/trivy',
+                    reportFiles: 'expense-backend.html',
+                    reportName: 'Trivy Backend Report'
+                ])
+
+                publishHTML(target: [
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports/trivy',
+                    reportFiles: 'expense-frontend.html',
+                    reportName: 'Trivy Frontend Report'
+                ])
+
+                publishHTML(target: [
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports/zap',
+                    reportFiles: "zap-report-${BUILD_NUMBER}.html",
+                    reportName: 'OWASP ZAP Report'
+                ])
             }
         }
 
@@ -193,7 +258,6 @@ pipeline {
                 }
             }
         }
-
         stage('OWASP ZAP Full Scan') {
             agent { label 'security' }
             steps {
@@ -216,7 +280,7 @@ pipeline {
                     if (zapExitCode == 0) {
                         echo 'OWASP ZAP completed successfully (exit code 0).'
                     } else if (zapExitCode == 3) {
-                        echo 'OWASP ZAP exited with code 3. Continuing pipeline as requested.'
+                        echo 'OWASP ZAP exited with code 3.Medium or high risk vulnerabilities were found.'
                     } else {
                         error "OWASP ZAP scan failed with exit code ${zapExitCode}"
                     }
@@ -225,22 +289,22 @@ pipeline {
         }
         
 
-        stage('Stop Security VM') {
-            steps {
-                sh '''
-                    ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
-                    STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
-                    if echo "$STATE" | grep -q running; then
-                        echo "Stopping Security VM"
-                        VBoxManage controlvm securite acpipowerbutton
-                    else
-                        echo "Security VM already stopped"
-                    fi
-                    '
-                '''
-            }
-        }
-    }
+    //     stage('Stop Security VM') {
+    //         steps {
+    //             sh '''
+    //                 ssh -T -i /var/jenkins_home/.ssh/id_rsa_vmjenkins_nopass -o StrictHostKeyChecking=no mehdi@192.168.1.15 '
+    //                 STATE=$(VBoxManage showvminfo securite --machinereadable | grep VMState=)
+    //                 if echo "$STATE" | grep -q running; then
+    //                     echo "Stopping Security VM"
+    //                     VBoxManage controlvm securite acpipowerbutton
+    //                 else
+    //                     echo "Security VM already stopped"
+    //                 fi
+    //                 '
+    //             '''
+    //         }
+    //     }
+     }
 
     post {
         success {
