@@ -63,12 +63,12 @@ pipeline {
         //     }
         // }
 
-        stage('Wait for VM') {
-            steps {
-                echo 'Waiting 60 seconds for Security VM to boot...'
-                sleep(time: 60, unit: 'SECONDS')
-            }
-        }
+        // stage('Wait for VM') {
+        //     steps {
+        //         echo 'Waiting 60 seconds for Security VM to boot...'
+        //         sleep(time: 60, unit: 'SECONDS')
+        //     }
+        // }
 
         stage('Sonar Analysis') {
             steps {
