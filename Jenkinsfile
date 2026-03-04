@@ -195,7 +195,7 @@ pipeline {
         }
 
         stage('OWASP ZAP Full Scan') {
-            agent { label 'Security' }
+            agent { label 'security' }
             steps {
                 script {
                     int zapExitCode = sh(
