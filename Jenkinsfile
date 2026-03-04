@@ -98,7 +98,7 @@ pipeline {
         }
 
         stage('Build and Push Docker Images to Nexus') {
-                agent { label 'Security' }
+                agent { label 'security' }
                 steps {
                 git branch: 'main', credentialsId: 'Git tok en', url: 'https://github.com/mehdibha09/Expense_Tracker.git'
                 withCredentials([usernamePassword(
@@ -126,7 +126,7 @@ pipeline {
         }
 
         stage('Security Scan') {
-            agent { label 'Security' }
+            agent { label 'security' }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'nexus-creds',
