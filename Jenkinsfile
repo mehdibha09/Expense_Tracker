@@ -138,10 +138,13 @@ stage('Create Microservice DBs') {
             script {
                 // Set PGPASSWORD environment variable
                 withEnv(["PGPASSWORD=${DB_PASSWORD}"]) {
-                    sh "psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c 'CREATE DATABASE auth_db;'"
-                    sh "psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c 'CREATE DATABASE order_db;'"
-                    sh "psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c 'CREATE DATABASE product_db;'"
-                    sh "psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c 'CREATE DATABASE inventory_db;'"
+                    def databases = ['auth_db', 'order_db', 'product_db', 'inventory_db']
+                    databases.each { dbName ->
+                        sh """
+                            psql -h ${DB_HOST} -U ${DB_USER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${dbName}'" | grep -q 1 || \
+                            psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c "CREATE DATABASE ${dbName};"
+                        """
+                    }
                 }
             }
         }
