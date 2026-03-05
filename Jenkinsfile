@@ -124,10 +124,10 @@ pipeline {
         //         }
         //     }
         // }*
- stage('Create Microservice DBs') {
+stage('Create Microservice DBs') {
     steps {
         withCredentials([usernamePassword(
-            credentialsId: 'db-creds',    // ID de credentials PostgreSQL
+            credentialsId: 'db-creds',
             usernameVariable: 'DB_USER',
             passwordVariable: 'DB_PASSWORD'
         )]) {
@@ -135,9 +135,7 @@ pipeline {
                 def services = ['auth', 'order', 'product', 'inventory']
                 services.each { svc ->
                     def dbName = "${svc}_db"
-                    sh """
-                        PGPASSWORD=$DB_PASSWORD psql -h 192.168.56.40 -U $DB_USER -d postgres -c "CREATE DATABASE $dbName;"
-                    """
+                    sh(script: 'PGPASSWORD=$DB_PASSWORD psql -h 192.168.56.40 -U $DB_USER -d postgres -c "CREATE DATABASE ${dbName};"', returnStdout: true, env: [DB_USER: env.DB_USER, DB_PASSWORD: env.DB_PASSWORD, dbName: dbName])
                     echo "Database ${dbName} created or already exists."
                 }
             }
