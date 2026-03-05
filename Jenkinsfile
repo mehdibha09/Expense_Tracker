@@ -126,9 +126,6 @@ pipeline {
         // }*
 stage('Create Microservice DBs') {
     agent { label 'k8s-agent' }
-    environment {
-        DB_HOST = '192.168.56.40'
-    }
     steps {
         withCredentials([usernamePassword(
             credentialsId: 'db-creds',
@@ -138,18 +135,16 @@ stage('Create Microservice DBs') {
             script {
                 def services = ['auth', 'order', 'product', 'inventory']
                 services.each { svc ->
-                    withEnv(["PGPASSWORD=${env.DB_PASSWORD}"]) {
-                        sh """
-                            psql -h $DB_HOST -U $DB_USER -d postgres -c "CREATE DATABASE ${svc}_db;"
-                        """
-                    }
+                    sh """
+                        docker exec -i postgres \
+                        psql -U $DB_USER -d postgres -c "CREATE DATABASE ${svc}_db;"
+                    """
                     echo "Database ${svc}_db created or already exists."
                 }
             }
         }
     }
 }
-
         // stage('Security Scan') {
         //     agent { label 'security' }
         //     steps {
