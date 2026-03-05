@@ -123,95 +123,115 @@ pipeline {
         //             '''
         //         }
         //     }
-        // }
-
-        stage('Security Scan') {
-            agent { label 'security' }
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-creds',
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASSWORD'
-                )]) {
-                    sh '''
-                        set -x
-                        echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /opt/trivy-cache:/root/.cache/trivy \
-                            -v /mnt/nfs/trivy/results:/results \
-                            aquasec/trivy image \
-                            --severity HIGH,CRITICAL \
-                            --format json \
-                            --output /results/expense-backend.json \
-                            192.168.56.30/expense-backend:latest
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /opt/trivy-cache:/root/.cache/trivy \
-                            -v /mnt/nfs/trivy/results:/results \
-                            aquasec/trivy image \
-                            --severity HIGH,CRITICAL \
-                            --format template \
-                            --template "@/contrib/html.tpl" \
-                            --output /results/expense-backend.html \
-                            192.168.56.30/expense-backend:latest
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /opt/trivy-cache:/root/.cache/trivy \
-                            -v /mnt/nfs/trivy/results:/results \
-                            aquasec/trivy image \
-                            --severity HIGH,CRITICAL \
-                            --format json \
-                            --output /results/expense-frontend.json \
-                            192.168.56.30/expense-frontend:latest
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /opt/trivy-cache:/root/.cache/trivy \
-                            -v /mnt/nfs/trivy/results:/results \
-                            aquasec/trivy image \
-                            --severity HIGH,CRITICAL \
-                            --format template \
-                            --template "@/contrib/html.tpl" \
-                            --output /results/expense-frontend.html \
-                            192.168.56.30/expense-frontend:latest
-                    '''
+        // }*
+ stage('Create Microservice DBs') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'db-creds',    // ID de credentials PostgreSQL
+            usernameVariable: 'DB_USER',
+            passwordVariable: 'DB_PASSWORD'
+        )]) {
+            script {
+                def services = ['auth', 'order', 'product', 'inventory']
+                services.each { svc ->
+                    def dbName = "${svc}_db"
+                    sh """
+                        PGPASSWORD=$DB_PASSWORD psql -h 192.168.56.40 -U $DB_USER -d postgres -c "CREATE DATABASE $dbName;"
+                    """
+                    echo "Database ${dbName} created or already exists."
                 }
             }
         }
+    }
+}
 
-        stage('Publish Security Reports trivey') {
-            agent { label 'security' }
-            steps {
-                sh '''
-                    set -x
-                    mkdir -p reports/trivy reports/zap
-                    cp -f /mnt/nfs/trivy/results/expense-backend.json reports/trivy/ 2>/dev/null || true
-                    cp -f /mnt/nfs/trivy/results/expense-frontend.json reports/trivy/ 2>/dev/null || true
-                    cp -f /mnt/nfs/trivy/results/expense-backend.html reports/trivy/ 2>/dev/null || true
-                    cp -f /mnt/nfs/trivy/results/expense-frontend.html reports/trivy/ 2>/dev/null || true
-                '''
+        // stage('Security Scan') {
+        //     agent { label 'security' }
+        //     steps {
+        //         withCredentials([usernamePassword(
+        //             credentialsId: 'nexus-creds',
+        //             usernameVariable: 'NEXUS_USER',
+        //             passwordVariable: 'NEXUS_PASSWORD'
+        //         )]) {
+        //             sh '''
+        //                 set -x
+        //                 echo $NEXUS_PASSWORD | docker login 192.168.56.30 -u $NEXUS_USER --password-stdin
+        //                 docker run --rm \
+        //                     -v /var/run/docker.sock:/var/run/docker.sock \
+        //                     -v /opt/trivy-cache:/root/.cache/trivy \
+        //                     -v /mnt/nfs/trivy/results:/results \
+        //                     aquasec/trivy image \
+        //                     --severity HIGH,CRITICAL \
+        //                     --format json \
+        //                     --output /results/expense-backend.json \
+        //                     192.168.56.30/expense-backend:latest
+        //                 docker run --rm \
+        //                     -v /var/run/docker.sock:/var/run/docker.sock \
+        //                     -v /opt/trivy-cache:/root/.cache/trivy \
+        //                     -v /mnt/nfs/trivy/results:/results \
+        //                     aquasec/trivy image \
+        //                     --severity HIGH,CRITICAL \
+        //                     --format template \
+        //                     --template "@/contrib/html.tpl" \
+        //                     --output /results/expense-backend.html \
+        //                     192.168.56.30/expense-backend:latest
+        //                 docker run --rm \
+        //                     -v /var/run/docker.sock:/var/run/docker.sock \
+        //                     -v /opt/trivy-cache:/root/.cache/trivy \
+        //                     -v /mnt/nfs/trivy/results:/results \
+        //                     aquasec/trivy image \
+        //                     --severity HIGH,CRITICAL \
+        //                     --format json \
+        //                     --output /results/expense-frontend.json \
+        //                     192.168.56.30/expense-frontend:latest
+        //                 docker run --rm \
+        //                     -v /var/run/docker.sock:/var/run/docker.sock \
+        //                     -v /opt/trivy-cache:/root/.cache/trivy \
+        //                     -v /mnt/nfs/trivy/results:/results \
+        //                     aquasec/trivy image \
+        //                     --severity HIGH,CRITICAL \
+        //                     --format template \
+        //                     --template "@/contrib/html.tpl" \
+        //                     --output /results/expense-frontend.html \
+        //                     192.168.56.30/expense-frontend:latest
+        //             '''
+        //         }
+        //     }
+        // }
 
-                archiveArtifacts artifacts: 'reports/**/*.html, reports/**/*.json', allowEmptyArchive: true
+        // stage('Publish Security Reports trivey') {
+        //     agent { label 'security' }
+        //     steps {
+        //         sh '''
+        //             set -x
+        //             mkdir -p reports/trivy reports/zap
+        //             cp -f /mnt/nfs/trivy/results/expense-backend.json reports/trivy/ 2>/dev/null || true
+        //             cp -f /mnt/nfs/trivy/results/expense-frontend.json reports/trivy/ 2>/dev/null || true
+        //             cp -f /mnt/nfs/trivy/results/expense-backend.html reports/trivy/ 2>/dev/null || true
+        //             cp -f /mnt/nfs/trivy/results/expense-frontend.html reports/trivy/ 2>/dev/null || true
+        //         '''
 
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'reports/trivy',
-                    reportFiles: 'expense-backend.html',
-                    reportName: 'Trivy Backend Report'
-                ])
+        //         archiveArtifacts artifacts: 'reports/**/*.html, reports/**/*.json', allowEmptyArchive: true
 
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'reports/trivy',
-                    reportFiles: 'expense-frontend.html',
-                    reportName: 'Trivy Frontend Report'
-                ])
-            }
-        }
+        //         publishHTML(target: [
+        //             allowMissing: true,
+        //             alwaysLinkToLastBuild: true,
+        //             keepAll: true,
+        //             reportDir: 'reports/trivy',
+        //             reportFiles: 'expense-backend.html',
+        //             reportName: 'Trivy Backend Report'
+        //         ])
+
+        //         publishHTML(target: [
+        //             allowMissing: true,
+        //             alwaysLinkToLastBuild: true,
+        //             keepAll: true,
+        //             reportDir: 'reports/trivy',
+        //             reportFiles: 'expense-frontend.html',
+        //             reportName: 'Trivy Frontend Report'
+        //         ])
+        //     }
+        // }
 
         // stage('Deploy to Kubernetes') {
         //     agent { label 'k8s-agent' }
@@ -247,56 +267,56 @@ pipeline {
         //         }
         //     }
         // }
-        stage('OWASP ZAP Full Scan') {
-            agent { label 'security' }
-            steps {
-                script {
-                    int zapExitCode = sh(
-                        script: """
-                            set -x
-                            docker run --rm \
-                                --name owasp-zap-scan-${BUILD_NUMBER} \
-                                -v /mnt/nfs/owasp-zap:/zap/wrk \
-                                ghcr.io/zaproxy/zaproxy:stable \
-                                zap-full-scan.py \
-                                -t http://192.168.56.10:30080 \
-                                -J /zap/wrk/zap-report-${BUILD_NUMBER}.json \
-                                -r /zap/wrk/zap-report-${BUILD_NUMBER}.html
-                        """,
-                        returnStatus: true
-                    )
+        // stage('OWASP ZAP Full Scan') {
+        //     agent { label 'security' }
+        //     steps {
+        //         script {
+        //             int zapExitCode = sh(
+        //                 script: """
+        //                     set -x
+        //                     docker run --rm \
+        //                         --name owasp-zap-scan-${BUILD_NUMBER} \
+        //                         -v /mnt/nfs/owasp-zap:/zap/wrk \
+        //                         ghcr.io/zaproxy/zaproxy:stable \
+        //                         zap-full-scan.py \
+        //                         -t http://192.168.56.10:30080 \
+        //                         -J /zap/wrk/zap-report-${BUILD_NUMBER}.json \
+        //                         -r /zap/wrk/zap-report-${BUILD_NUMBER}.html
+        //                 """,
+        //                 returnStatus: true
+        //             )
 
-                    if (zapExitCode == 0) {
-                        echo 'OWASP ZAP completed successfully (exit code 0).'
-                    } else if (zapExitCode == 3) {
-                        echo 'OWASP ZAP exited with code 3.Medium or high risk vulnerabilities were found.'
-                    } else {
-                        error "OWASP ZAP scan failed with exit code ${zapExitCode}"
-                    }
-                }
-            }
-        }
-          stage('Publish Security Reports owasp zap') {
-            agent { label 'security' }
-            steps {
-                sh '''
-                    set -x
-                    cp -f /mnt/nfs/owasp-zap/zap-report-${BUILD_NUMBER}.html reports/zap/ 2>/dev/null || true
-                    cp -f /mnt/nfs/owasp-zap/zap-report-${BUILD_NUMBER}.json reports/zap/ 2>/dev/null || true
-                '''
+        //             if (zapExitCode == 0) {
+        //                 echo 'OWASP ZAP completed successfully (exit code 0).'
+        //             } else if (zapExitCode == 3) {
+        //                 echo 'OWASP ZAP exited with code 3.Medium or high risk vulnerabilities were found.'
+        //             } else {
+        //                 error "OWASP ZAP scan failed with exit code ${zapExitCode}"
+        //             }
+        //         }
+        //     }
+        // }
+        //   stage('Publish Security Reports owasp zap') {
+        //     agent { label 'security' }
+        //     steps {
+        //         sh '''
+        //             set -x
+        //             cp -f /mnt/nfs/owasp-zap/zap-report-${BUILD_NUMBER}.html reports/zap/ 2>/dev/null || true
+        //             cp -f /mnt/nfs/owasp-zap/zap-report-${BUILD_NUMBER}.json reports/zap/ 2>/dev/null || true
+        //         '''
 
-                archiveArtifacts artifacts: 'reports/**/*.html, reports/**/*.json', allowEmptyArchive: true
+        //         archiveArtifacts artifacts: 'reports/**/*.html, reports/**/*.json', allowEmptyArchive: true
 
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'reports/zap',
-                    reportFiles: "zap-report-${BUILD_NUMBER}.html",
-                    reportName: 'OWASP ZAP Report'
-                ])
-            }
-        }
+        //         publishHTML(target: [
+        //             allowMissing: true,
+        //             alwaysLinkToLastBuild: true,
+        //             keepAll: true,
+        //             reportDir: 'reports/zap',
+        //             reportFiles: "zap-report-${BUILD_NUMBER}.html",
+        //             reportName: 'OWASP ZAP Report'
+        //         ])
+        //     }
+        // }
         
 
     //     stage('Stop Security VM') {
