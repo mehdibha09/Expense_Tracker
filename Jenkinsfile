@@ -136,14 +136,11 @@ stage('Create Microservice DBs') {
             passwordVariable: 'DB_PASSWORD'
         )]) {
             script {
-                def services = ['auth', 'order', 'product', 'inventory']
-                services.each { svc ->
-                    withEnv(["PGPASSWORD=${DB_PASSWORD}"]) {
-                        sh """
-                            psql -h $DB_HOST -U $DB_USER -d postgres -c "CREATE DATABASE ${svc}_db;"
-                        """
-                    }
-                    echo "Database ${svc}_db created or already exists."
+                withEnv(["PGPASSWORD=${DB_PASSWORD}"]) {
+                    sh """psql -h $DB_HOST -U $DB_USER -d postgres -c "CREATE DATABASE auth_db;" """
+                    sh """psql -h $DB_HOST -U $DB_USER -d postgres -c "CREATE DATABASE order_db;" """
+                    sh """psql -h $DB_HOST -U $DB_USER -d postgres -c "CREATE DATABASE product_db;" """
+                    sh """psql -h $DB_HOST -U $DB_USER -d postgres -c "CREATE DATABASE inventory_db;" """
                 }
             }
         }
