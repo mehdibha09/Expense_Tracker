@@ -125,6 +125,7 @@ pipeline {
         //     }
         // }*
 stage('Create Microservice DBs') {
+    agent { label 'k8s-agent' }
     steps {
         withCredentials([usernamePassword(
             credentialsId: 'db-creds',
