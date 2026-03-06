@@ -350,6 +350,7 @@ pipeline {
                                 --name owasp-zap-scan-${BUILD_NUMBER} \
                                 -v /mnt/nfs/owasp-zap:/zap/wrk \
                                 ghcr.io/zaproxy/zaproxy:stable \
+                                --cpus="0.7" \
                                 zap-full-scan.py \
                                 -t http://192.168.56.10:30080 \
                                 -J /zap/wrk/zap-report-${BUILD_NUMBER}.json \
