@@ -361,6 +361,9 @@ pipeline {
 
                     if (zapExitCode == 0) {
                         echo 'OWASP ZAP completed successfully (exit code 0).'
+
+                    else if(zapExitCode == 2) {
+                        echo 'OWASP ZAP exited with code 2. There are vulnerabilities found.'
                     } else if (zapExitCode == 3) {
                         echo 'OWASP ZAP exited with code 3.Medium or high risk vulnerabilities were found.'
                     } else {
